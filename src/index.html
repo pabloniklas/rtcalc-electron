@@ -1,22 +1,41 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>RTCalc - Calculadora cientifica con esteroides</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="calculator-layout">
-        <div id="tape-container" class="tape-container">
-            
-        </div>
+    <head>
+        <meta charset="UTF-8">
+        <title>RTCalc - Calculadora científica con esteroides</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div class="calculator-layout">
+            <div id="tape-container" class="tape-container">
+            </div>
 
-        <div class="input-panel">
-            <span class="prompt">&gt;</span>
-            <input type="text" id="calc-input" placeholder="Ej: x^2 - 4, sin(x) o x^2 - y^2 (3D)" autofocus autocomplete="off" spellcheck="false">
+            <!-- Panel de entrada y controles unificados arriba -->
+            <div class="input-panel">
+                <span class="prompt">&gt;</span>
+                <input type="text" id="calc-input"
+                    placeholder="Ej: x^2 - 4, sin(x), o 'man' para ayuda..."
+                    autofocus
+                    autocomplete="off" spellcheck="false">
+                <button id="submit-btn" class="action-btn submit-btn"
+                    title="Calcular (Enter)">▶</button>
+                <button id="help-btn" class="action-btn"
+                    title="Manual de usuario">❓</button>
+                <button id="clear-tape-btn" class="action-btn"
+                    title="Limpiar cinta">🗑️</button>
+            </div>
         </div>
-    </div>
-
-    <script src="renderer.js"></script>
-</body>
+        <!-- Modal de bienvenida / About automático -->
+        <div id="about-splash" class="splash-modal">
+            <div class="splash-content">
+                <img src="../assets/icon.png" alt="RTCalc Logo"
+                    class="splash-logo">
+                <h2>RTCalc</h2>
+                <p>Calculadora científica con esteroides.</p>
+                <p>By Pablo Niklas &lt;pablo.niklas@gmail.com&gt;</p>
+                <span class="splash-version">v1.0.0</span>
+            </div>
+        </div>
+        <script src="renderer.js"></script>
+    </body>
 </html>

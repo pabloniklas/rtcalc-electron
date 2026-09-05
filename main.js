@@ -1,10 +1,18 @@
-const { app, BrowserWindow } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  nativeImage
+} = require('electron');
 const path = require('path');
 
+
 function createWindow() {
+  const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon.png'));
+
   const mainWindow = new BrowserWindow({
     width: 650,
     height: 850,
+    icon: icon, // Ruta directa a la raíz
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -12,6 +20,7 @@ function createWindow() {
     autoHideMenuBar: true,
     backgroundColor: '#f5f5f7'
   });
+
 
   mainWindow.loadFile(path.join(__dirname, 'src/index.html'));
 }

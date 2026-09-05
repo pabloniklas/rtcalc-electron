@@ -1,12 +1,17 @@
-const { create, all } = require('mathjs');
+const {
+    create,
+    all
+} = require('mathjs');
 const Plotly = require('plotly.js-dist-min');
 const math = create(all);
 
 const inputField = document.getElementById('calc-input');
 const tapeContainer = document.getElementById('tape-container');
+const helpBtn = document.getElementById('help-btn');
+const clearTapeBtn = document.getElementById('clear-tape-btn');
+
 let memory = 0;
 let graphCounter = 0;
-
 let history = [];
 let historyIndex = -1;
 let tempInput = '';
@@ -21,47 +26,276 @@ function formatLocalNumber(value) {
     }).format(rounded);
 }
 
+const submitBtn = document.getElementById('submit-btn');
+
+// Función central para procesar y evaluar la entrada
+function processInput() {
+    const rawInput = inputField.value.trim();
+    if (!rawInput) return;
+
+    // Interceptar 'man' o 'help' para no enviar a MathJS
+    if (rawInput.toLowerCase() === 'man' || rawInput.toLowerCase() === 'help') {
+        openHelpModal();
+        inputField.value = '';
+        return;
+    }
+
+    history.push(rawInput);
+    historyIndex = history.length;
+    tempInput = '';
+
+    appendTape(rawInput);
+    inputField.value = '';
+    inputField.focus();
+}
+
+// Evento del botón de submit
+if (submitBtn) {
+    submitBtn.addEventListener('click', () => {
+        processInput();
+    });
+}
+
+// Escuchar Enter en el input de texto
+inputField.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        processInput();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (history.length === 0) return;
+        if (historyIndex === history.length) tempInput = inputField.value;
+        if (historyIndex > 0) {
+            historyIndex--;
+            inputField.value = history[historyIndex];
+        }
+    } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (history.length === 0) return;
+        if (historyIndex < history.length - 1) {
+            historyIndex++;
+            inputField.value = history[historyIndex];
+        } else {
+            historyIndex = history.length;
+            inputField.value = tempInput;
+        }
+    }
+});
+
+// Ocultar y remover el modal de bienvenida automáticamente al iniciar
+window.addEventListener('DOMContentLoaded', () => {
+    const splashModal = document.getElementById('about-splash');
+    if (splashModal) {
+        setTimeout(() => {
+            splashModal.remove();
+        }, 3500);
+    }
+});
+
+if (clearTapeBtn) {
+    clearTapeBtn.addEventListener('click', () => {
+        tapeContainer.innerHTML = '';
+        history = [];
+        historyIndex = -1;
+        tempInput = '';
+        memory = 0;
+        inputField.focus();
+    });
+}
+
+if (helpBtn) {
+    helpBtn.addEventListener('click', () => {
+        openHelpModal();
+    });
+}
+
+// Unificación del evento Keydown para entrada y navegación de historial
+inputField.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        const rawInput = inputField.value.trim();
+        if (!rawInput) return;
+
+        // Interceptar 'man' o 'help' para no enviar a MathJS
+        if (rawInput.toLowerCase() === 'man' || rawInput.toLowerCase() === 'help') {
+            openHelpModal();
+            inputField.value = '';
+            return;
+        }
+
+        history.push(rawInput);
+        historyIndex = history.length;
+        tempInput = '';
+
+        appendTape(rawInput);
+        inputField.value = '';
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (history.length === 0) return;
+        if (historyIndex === history.length) tempInput = inputField.value;
+        if (historyIndex > 0) {
+            historyIndex--;
+            inputField.value = history[historyIndex];
+        }
+    } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (history.length === 0) return;
+        if (historyIndex < history.length - 1) {
+            historyIndex++;
+            inputField.value = history[historyIndex];
+        } else {
+            historyIndex = history.length;
+            inputField.value = tempInput;
+        }
+    }
+});
+
+function formatResultForTape(resultStr) {
+    if (typeof resultStr !== 'string') return resultStr;
+
+    const superscripts = {
+        '0': '⁰',
+        '1': '¹',
+        '2': '²',
+        '3': '³',
+        '4': '⁴',
+        '5': '⁵',
+        '6': '⁶',
+        '7': '⁷',
+        '8': '⁸',
+        '9': '⁹'
+    };
+
+    return resultStr
+        .replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (match, base, exp) => {
+            return `${base}${exp.split('').map(digit => superscripts[digit] || digit).join('')}`;
+        })
+        .replace(/\*/g, ' · ');
+}
+
+
+
 const customScope = {
-    ln: function(x) {
+    ln: function (x) {
         return math.log(x);
     },
-    derivative: function(expr, variable) {
+    derivative: function (expr, variable) {
         return math.derivative(expr, variable).toString();
     },
-    deriv: function(expr, variable, x0) {
+    deriv: function (expr, variable, x0) {
         const node = math.parse(expr);
         const compiled = node.compile();
         const h = 1e-7;
-        const evalAt = (val) => compiled.evaluate({ [variable]: val });
+        const evalAt = (val) => compiled.evaluate({
+            [variable]: val
+        });
         return (evalAt(x0 + h) - evalAt(x0 - h)) / (2 * h);
     },
-    integral: function(expr, variable, a, b, n = 1000) {
+    integral: function (expr, variable, a, b, n = 1000) {
         const node = math.parse(expr);
         const compiled = node.compile();
         const h = (b - a) / n;
         let sum = 0;
         for (let i = 0; i <= n; i++) {
             const x = a + i * h;
-            const val = compiled.evaluate({ [variable]: x });
+            const val = compiled.evaluate({
+                [variable]: x
+            });
             if (i === 0 || i === n) sum += val;
             else if (i % 2 === 1) sum += 4 * val;
             else sum += 2 * val;
         }
         return (h / 3) * sum;
     },
-    limit: function(expr, variable, target) {
+    factor: function (exprOrNode) {
+        try {
+            let exprStr = typeof exprOrNode === 'string' ? exprOrNode : exprOrNode.toString();
+            exprStr = exprStr.replace(/\s+/g, '').toLowerCase();
+
+            const groupMatch = exprStr.match(/^([a-z0-9]+)([a-z])\+([a-z0-9]+)\2\+([a-z0-9]+)([a-z])\+([a-z0-9]+)\5$/);
+            if (groupMatch) {
+                const [_, t1, v1, t2, t3, v2, t4] = groupMatch;
+                if (t1 === t3 && t2 === t4) {
+                    return `(${t1} + ${t2}) * (${v1} + ${v2})`;
+                }
+            }
+
+            const terms = exprStr.split(/(?=[+-])/);
+            if (terms.length > 1) {
+                const gcd = (a, b) => b === 0 ? Math.abs(a) : gcd(b, a % b);
+                const coeffs = terms.map(t => {
+                    const m = t.match(/^[+-]?\d+/);
+                    if (m) return parseInt(m[0]);
+                    return t.startsWith('-') ? -1 : 1;
+                });
+
+                const commonNum = coeffs.reduce((acc, val) => gcd(acc, val));
+                let minExp = Infinity;
+                terms.forEach(t => {
+                    if (!t.includes('x')) minExp = 0;
+                    else {
+                        const expMatch = t.match(/x\^(\d+)/);
+                        if (expMatch) minExp = Math.min(minExp, parseInt(expMatch[1]));
+                        else minExp = Math.min(minExp, 1);
+                    }
+                });
+
+                if (commonNum > 1 || minExp > 0) {
+                    const factorStr = `${commonNum > 1 ? commonNum : ''}${minExp > 0 ? (minExp === 1 ? 'x' : `x^${minExp}`) : ''}`;
+                    const rest = terms.map(t => {
+                        let c = (coeffs[terms.indexOf(t)] / commonNum);
+                        let expMatch = t.match(/x\^(\d+)/);
+                        let exp = t.includes('x') ? (expMatch ? parseInt(expMatch[1]) : 1) : 0;
+                        let newExp = exp - minExp;
+
+                        let cStr = c === 1 && newExp > 0 ? '' : (c === -1 && newExp > 0 ? '-' : c.toString());
+                        let xStr = newExp === 0 ? '' : (newExp === 1 ? 'x' : `x^${newExp}`);
+                        return `${cStr}${xStr}`;
+                    }).join(' + ').replace(/\+ -/g, '- ');
+
+                    return `${factorStr} * (${rest})`;
+                }
+            }
+
+            const diffSquares = exprStr.match(/^([a-z0-9\*]+)\^2\-([a-z0-9\*]+)\^2$/);
+            if (diffSquares) {
+                return `(${diffSquares[1]} - ${diffSquares[2]}) * (${diffSquares[1]} + ${diffSquares[2]})`;
+            }
+
+            const match = exprStr.match(/([+-]?\d*)\*?x\^2([+-]?\d*\*?x)?([+-]?\d+)?/);
+            if (match) {
+                let a = match[1] === '' || match[1] === '+' ? 1 : (match[1] === '-' ? -1 : parseFloat(match[1]));
+                let b = parseFloat((match[2] || '0').replace('x', '').replace('*', '')) || 0;
+                let c = parseFloat(match[3]) || 0;
+
+                const discriminant = b * b - 4 * a * c;
+                if (discriminant >= 0) {
+                    const x1 = (-b + Math.sqrt(discriminant)) / (2 * a);
+                    const x2 = (-b - Math.sqrt(discriminant)) / (2 * a);
+                    const formatRoot = (r) => r === 0 ? 'x' : (r > 0 ? `(x - ${r})` : `(x + ${Math.abs(r)})`);
+                    let coeffStr = (a !== 1) ? a : '';
+                    if (x1 === x2) return `${coeffStr}${formatRoot(x1)}²`;
+                    return `${coeffStr}${formatRoot(x1)} * ${formatRoot(x2)}`;
+                }
+            }
+
+            return math.simplify(exprStr).toString();
+        } catch (e) {
+            return "No se pudo factorizar";
+        }
+    },
+    limit: function (expr, variable, target) {
         const node = math.parse(expr);
         const compiled = node.compile();
         const h = 1e-7;
-        const evalAt = (val) => compiled.evaluate({ [variable]: val });
-        
+        const evalAt = (val) => compiled.evaluate({
+            [variable]: val
+        });
+
         const valLeft = evalAt(target - h);
         const valRight = evalAt(target + h);
 
-        // Si los valores crecen enormemente y tienen signos opuestos (ej: 1/x en 0)
         if (Math.abs(valLeft) > 1e5 && Math.abs(valRight) > 1e5) {
             if (Math.sign(valLeft) !== Math.sign(valRight)) {
-                return "∄"; // Símbolo de "No existe"
+                return "∄";
             }
             return valLeft > 0 ? "+∞" : "-∞";
         }
@@ -69,14 +303,127 @@ const customScope = {
         const avg = (valLeft + valRight) / 2;
         return isNaN(avg) ? "∄" : avg;
     },
-    // Ecuación lineal: ax + b = c -> devuelve el valor de x
-    solveLinear: function(a, b, c) {
-        // Resuelve a*x + b = c  =>  x = (c - b) / a
+    solveLinear: function (a, b, c) {
         return (c - b) / a;
     },
+    mcd: function (...args) {
+        return args.reduce((acc, val) => math.gcd(acc, val));
+    },
+    mcm: function (...args) {
+        return args.reduce((acc, val) => math.lcm(acc, val));
+    },
+    factors: function (n) {
+        let num = Math.abs(parseInt(n));
+        if (isNaN(num) || num < 2) return "Ingresá un entero mayor a 1";
 
-    // Ecuación cuadrática: ax^2 + bx + c = 0 -> devuelve las raíces (reales o complejas)
-    solveQuad: function(a, b, c) {
+        const factors = {};
+        let d = 2;
+
+        while (num >= 2) {
+            while (num % d === 0) {
+                factors[d] = (factors[d] || 0) + 1;
+                num /= d;
+            }
+            d++;
+            if (d * d > num) {
+                if (num > 1) {
+                    factors[num] = (factors[num] || 0) + 1;
+                    break;
+                }
+            }
+        }
+
+        return Object.entries(factors)
+            .map(([prime, exp]) => exp > 1 ? `${prime}^${exp}` : `${prime}`)
+            .join(' * ');
+    },
+    // Congruencia en módulo: Evalúa si a ≡ b (mod m)
+    congruent: function (a, b, m) {
+        if (m === 0) return "El módulo m no puede ser 0";
+        const modA = math.mod(a, m);
+        const modB = math.mod(b, m);
+
+        // Manejo de residuos equivalentes en Math.js
+        const isEquivalent = Math.abs(modA - modB) < 1e-9;
+
+        return isEquivalent ?
+            `true (${a} ≡ ${b} mod ${m})` :
+            `false (${a} ≢ ${b} mod ${m})`;
+    },
+    // Tabla básica de Transformadas de Laplace
+    laplace: function (expr) {
+        let e = expr.replace(/\s+/g, '').toLowerCase();
+
+        // 1. Constante k -> k/s
+        if (!isNaN(e)) return `${e}/s`;
+
+        // 2. t^n -> n! / s^(n+1)
+        const tPowMatch = e.match(/^t\^(\d+)$/);
+        if (tPowMatch) {
+            const n = parseInt(tPowMatch[1]);
+            const fact = (num) => num <= 1 ? 1 : num * fact(num - 1);
+            return `${fact(n)} / s^${n + 1}`;
+        }
+        if (e === 't') return '1 / s^2';
+
+        // 3. e^(a*t) -> 1 / (s - a)
+        const expMatch = e.match(/^exp\(([+-]?\d*)\*?t\)$/) || e.match(/^e\^\(([+-]?\d*)\*?t\)$/);
+        if (expMatch) {
+            let a = expMatch[1] === '' || expMatch[1] === '+' ? 1 : (expMatch[1] === '-' ? -1 : parseFloat(expMatch[1]));
+            return a > 0 ? `1 / (s - ${a})` : `1 / (s + ${Math.abs(a)})`;
+        }
+
+        // 4. sin(w*t) -> w / (s^2 + w^2) y cos(w*t) -> s / (s^2 + w^2)
+        const sinMatch = e.match(/^sin\(([+-]?\d*)\*?t\)$/);
+        if (sinMatch) {
+            let w = sinMatch[1] === '' || sinMatch[1] === '+' ? 1 : parseFloat(sinMatch[1]);
+            return `${w} / (s^2 + ${w * w})`;
+        }
+
+        const cosMatch = e.match(/^cos\(([+-]?\d*)\*?t\)$/);
+        if (cosMatch) {
+            let w = cosMatch[1] === '' || cosMatch[1] === '+' ? 1 : parseFloat(cosMatch[1]);
+            return `s / (s^2 + ${w * w})`;
+        }
+
+        return "Transformada no soportada en la tabla básica";
+    },
+
+    // Coeficientes y N-ésimo armónico de Serie de Fourier
+    fourierTerm: function (expr, n, L = Math.PI) {
+        // Devuelve la expresión del n-ésimo término armónico
+        return `a_${n}*cos(${n}*x) + b_${n}*sin(${n}*x)`;
+    },
+    // Análisis y reconstrucción por Serie de Fourier en [-π, π]
+    fourier: function (expr, N = 3) {
+        const L = Math.PI;
+
+        // 1. Coeficiente a0
+        const a0 = (1 / L) * customScope.integral(expr, 'x', -L, L);
+
+        let sumTerms = [`${(a0 / 2).toFixed(4)}`];
+        let harmonicTraces = [expr]; // Incluimos la función original como primera traza
+
+        // 2. Calcular coeficientes an y bn para cada armónico hasta N
+        for (let n = 1; n <= N; n++) {
+            const an = (1 / L) * customScope.integral(`(${expr}) * cos(${n}*x)`, 'x', -L, L);
+            const bn = (1 / L) * customScope.integral(`(${expr}) * sin(${n}*x)`, 'x', -L, L);
+
+            const termA = Math.abs(an) > 1e-4 ? `${an.toFixed(4)} * cos(${n}*x)` : '';
+            const termB = Math.abs(bn) > 1e-4 ? `${bn.toFixed(4)} * sin(${n}*x)` : '';
+
+            if (termA) sumTerms.push(an >= 0 ? `+ ${termA}` : `- ${termA.replace('-', '')}`);
+            if (termB) sumTerms.push(bn >= 0 ? `+ ${termB}` : `- ${termB.replace('-', '')}`);
+        }
+
+        // Expresión de la suma reconstruida
+        const reconstructedExpr = sumTerms.join(' ');
+
+        // Devolvemos la función para que el motor de renderizado trace
+        // la función original y la reconstrucción armónica juntas
+        return `f(x) = ${expr}, ${reconstructedExpr}`;
+    },
+    solveQuad: function (a, b, c) {
         const discriminant = b * b - 4 * a * c;
         if (discriminant > 0) {
             const x1 = (-b + Math.sqrt(discriminant)) / (2 * a);
@@ -91,9 +438,7 @@ const customScope = {
             return [`x₁ = ${real} + ${imag}i`, `x₂ = ${real} - ${imag}i`];
         }
     },
-
-    // Ecuación diofántica lineal: ax + by = c
-    diophantine: function(a, b, c) {
+    diophantine: function (a, b, c) {
         function extendedGCD(a, b) {
             if (b === 0) return [1, 0, a];
             const [x1, y1, gcd] = extendedGCD(b, a % b);
@@ -118,40 +463,6 @@ const customScope = {
     ans: () => memory
 };
 
-inputField.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        const rawInput = inputField.value.trim();
-        if (!rawInput) return;
-
-        history.push(rawInput);
-        historyIndex = history.length;
-        tempInput = '';
-
-        appendTape(rawInput);
-        inputField.value = '';
-    } 
-    else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (history.length === 0) return;
-        if (historyIndex === history.length) tempInput = inputField.value;
-        if (historyIndex > 0) {
-            historyIndex--;
-            inputField.value = history[historyIndex];
-        }
-    } 
-    else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (history.length === 0) return;
-        if (historyIndex < history.length - 1) {
-            historyIndex++;
-            inputField.value = history[historyIndex];
-        } else {
-            historyIndex = history.length;
-            inputField.value = tempInput;
-        }
-    }
-});
-
 function formatMatrixAsHTML(mat) {
     if (!Array.isArray(mat) || !Array.isArray(mat[0])) return mat;
 
@@ -166,10 +477,8 @@ function formatMatrixAsHTML(mat) {
 function formatExpressionForTape(expr) {
     let formatted = expr;
 
-    // Función auxiliar para convertir corchetes de matrices de texto en HTML estructurado
     const cleanMatrixInString = (matStr) => {
         try {
-            // Evaluar de forma segura la estructura de la matriz para limpiarla
             const parsed = JSON.parse(matStr.replace(/'/g, '"'));
             if (Array.isArray(parsed) && Array.isArray(parsed[0])) {
                 let rowsHTML = parsed.map(row => {
@@ -178,56 +487,122 @@ function formatExpressionForTape(expr) {
                 }).join('');
                 return `<span class="math-matrix"><span class="mat-bracket">[</span><span class="mat-rows">${rowsHTML}</span><span class="mat-bracket">]</span></span>`;
             }
-        } catch (e) {
-            // Si falla el parseo, retorna el texto original de la matriz
-        }
+        } catch (e) {}
         return matStr;
     };
 
-    // 1. Formatear matrices dentro de funciones como inv, det, transpose, etc.
     formatted = formatted.replace(/(inv|det|transpose|eigenvalues)\s*\(\s*(\[[\s\S]*?\])\s*\)/gi, (match, func, matContent) => {
         const formattedMat = cleanMatrixInString(matContent);
         return `<span class="math-func-op">${func}</span>(${formattedMat})`;
     });
 
-    // 2. Formatear integrales: integral('expr', 'var', a, b) -> ∫_a^b expr d(var)
+    // Formatear Laplace: laplace('expr') -> L{expr}
+    formatted = formatted.replace(/laplace\s*\(\s*['"]([^'"]+)['"]\s*\)/gi, (match, body) => {
+        return `<span class="math-func-op">ℒ</span>{<span class="math-body">${body}</span>}`;
+    });
+
     formatted = formatted.replace(/integral\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi, (match, body, v, a, b) => {
-        const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => {
-            const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
-            return `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`;
-        });
+        const superscripts = {
+            '0': '⁰',
+            '1': '¹',
+            '2': '²',
+            '3': '³',
+            '4': '⁴',
+            '5': '⁵',
+            '6': '⁶',
+            '7': '⁷',
+            '8': '⁸',
+            '9': '⁹'
+        };
+        const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`);
         return `<span class="math-integral"><span class="math-limits"><span class="math-sup">${b}</span><span class="math-symbol">∫</span><span class="math-sub">${a}</span></span><span class="math-body">${bodyClean}</span><span class="math-diff">d${v}</span></span>`;
     });
 
-    // 3. Formatear derivadas analíticas: derivative('expr', 'var') -> d/d(var) [expr]
     formatted = formatted.replace(/derivative\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)/gi, (match, body, v) => {
-        const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => {
-            const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
-            return `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`;
-        });
+        const superscripts = {
+            '0': '⁰',
+            '1': '¹',
+            '2': '²',
+            '3': '³',
+            '4': '⁴',
+            '5': '⁵',
+            '6': '⁶',
+            '7': '⁷',
+            '8': '⁸',
+            '9': '⁹'
+        };
+        const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`);
         return `<span class="math-derivative"><span class="math-frac-deriv"><span class="math-num">d</span><span class="math-den">d${v}</span></span><span class="math-bracket-custom">[${bodyClean}]</span></span>`;
     });
 
-    // 4. Formatear límites: limit('expr', 'var', val) -> lim_(var→val) expr
     formatted = formatted.replace(/limit\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*([^)]+)\s*\)/gi, (match, body, v, target) => {
-        const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => {
-            const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
-            return `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`;
-        });
+        const superscripts = {
+            '0': '⁰',
+            '1': '¹',
+            '2': '²',
+            '3': '³',
+            '4': '⁴',
+            '5': '⁵',
+            '6': '⁶',
+            '7': '⁷',
+            '8': '⁸',
+            '9': '⁹'
+        };
+        const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`);
         return `<span class="math-limit"><span class="math-lim-text">lim</span><span class="math-lim-sub">${v}→${target}</span><span class="math-body">${bodyClean}</span></span>`;
     });
 
-    // 5. Formatear potencias y multiplicaciones estándar
     formatted = formatted
         .replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (match, base, exp) => {
-            const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+            const superscripts = {
+                '0': '⁰',
+                '1': '¹',
+                '2': '²',
+                '3': '³',
+                '4': '⁴',
+                '5': '⁵',
+                '6': '⁶',
+                '7': '⁷',
+                '8': '⁸',
+                '9': '⁹'
+            };
             return `${base}${exp.split('').map(digit => superscripts[digit] || digit).join('')}`;
         })
         .replace(/\*/g, ' · ');
 
-    // 6. Formatear fracciones simples (ej: 4/5)
     formatted = formatted.replace(/(\b\w+|\d+)\s*\/\s*(\b\w+|\d+\b)/g, (match, num, den) => {
         return `<span class="math-fraction"><span class="math-num">${num}</span><span class="math-den">${den}</span></span>`;
+    });
+
+    // Formatear Fourier: fourier('expr', N)
+    formatted = formatted.replace(/fourier\s*\(\s*['"]([^'"]+)['"]\s*,\s*(\d+)\s*\)/gi, (match, body, n) => {
+        return `<span class="math-func-op">Fourier</span>(<span class="math-body">${body}</span>, N=${n})`;
+    });
+
+    // Formatear congruencia modular: congruent(a, b, m) -> a ≡ b (mod m)
+    formatted = formatted.replace(/congruent\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi, (match, a, b, m) => {
+        return `<span class="math-func-op">${a.trim()}</span> ≡ <span class="math-func-op">${b.trim()}</span> (mod ${m.trim()})`;
+    });
+
+    formatted = formatted.replace(/factors\s*\(\s*(\d+)\s*\)/gi, (match, num) => {
+        return `<span class="math-func-op">factors</span>(${num})`;
+    });
+
+    formatted = formatted.replace(/factor\s*\(\s*['"]([^'"]+)['"]\s*\)/gi, (match, body) => {
+        const superscripts = {
+            '0': '⁰',
+            '1': '¹',
+            '2': '²',
+            '3': '³',
+            '4': '⁴',
+            '5': '⁵',
+            '6': '⁶',
+            '7': '⁷',
+            '8': '⁸',
+            '9': '⁹'
+        };
+        const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`);
+        return `<span class="math-factor-op">factor</span>(${bodyClean})`;
     });
 
     return formatted;
@@ -242,8 +617,6 @@ function appendTape(expr) {
 
     const exprSpan = document.createElement('span');
     exprSpan.className = 'tape-expression';
-    
-    // Usamos innerHTML para que renderice correctamente las fracciones HTML
     exprSpan.innerHTML = formatExpressionForTape(expr);
 
     const rightContainer = document.createElement('div');
@@ -254,20 +627,32 @@ function appendTape(expr) {
     resultSpan.className = 'tape-result';
 
     let graphDataToRender = null;
-    const manMatch = expr.match(/^man(\s+(.+))?$/i);
     const funcMatch = expr.match(/^f\s*\(([^)]+)\)\s*=\s*(.+)$/i);
 
+    // Interceptar llamadas a Fourier para renderizar el gráfico superpuesto
+    const fourierMatch = expr.match(/^fourier\s*\(\s*['"]([^'"]+)['"]\s*,\s*(\d+)\s*\)/i);
+    if (fourierMatch) {
+        const body = fourierMatch[1];
+        const nTerms = parseInt(fourierMatch[2]);
+
+        // Evaluamos fourier para obtener las curvas a graficar
+        const plotCmd = customScope.fourier(body, nTerms);
+        const varsAndBody = plotCmd.match(/^f\s*\(([^)]+)\)\s*=\s*(.+)$/i);
+
+        resultSpan.textContent = `= Serie de Fourier (N=${nTerms})`;
+        rightContainer.appendChild(resultSpan);
+        headerDiv.appendChild(exprSpan);
+        headerDiv.appendChild(rightContainer);
+        lineDiv.appendChild(headerDiv);
+
+        graphDataToRender = {
+            vars: [varsAndBody[1].trim()],
+            body: varsAndBody[2].trim()
+        };
+    }
+
     try {
-        if (manMatch) {
-            const topic = manMatch[2] ? manMatch[2].trim().toLowerCase() : '';
-            openHelpModal(topic);
-            resultSpan.textContent = `= ventana ayuda`;
-            rightContainer.appendChild(resultSpan);
-            headerDiv.appendChild(exprSpan);
-            headerDiv.appendChild(rightContainer);
-            lineDiv.appendChild(headerDiv);
-        } 
-        else if (funcMatch) {
+        if (funcMatch) {
             const vars = funcMatch[1].split(',').map(v => v.trim());
             const body = funcMatch[2].trim();
             resultSpan.textContent = `= f(${vars.join(', ')})`;
@@ -276,12 +661,30 @@ function appendTape(expr) {
             headerDiv.appendChild(rightContainer);
             lineDiv.appendChild(headerDiv);
 
-            graphDataToRender = { vars, body };
+            graphDataToRender = {
+                vars,
+                body
+            };
         } else {
-            const evaluated = math.evaluate(expr, customScope);
-            let resultVal = (typeof evaluated === 'object' && evaluated?.entries) 
-                ? evaluated.entries[evaluated.entries.length - 1] 
-                : evaluated;
+            const hasFractions = /\d+\s*\/\s*\d+/.test(expr);
+            let evaluated;
+
+            if (hasFractions) {
+                try {
+                    evaluated = math.evaluate(expr, customScope);
+                    if (typeof evaluated === 'number') {
+                        const frac = math.fraction(evaluated);
+                        evaluated = `${frac.n}/${frac.d}`;
+                    }
+                } catch (e) {
+                    evaluated = math.evaluate(expr, customScope);
+                }
+            } else {
+                evaluated = math.evaluate(expr, customScope);
+            }
+
+            let resultVal = (typeof evaluated === 'object' && evaluated?.entries) ?
+                evaluated.entries[evaluated.entries.length - 1] : evaluated;
 
             if (typeof resultVal === 'function') throw new Error("Expresión incompleta");
 
@@ -289,7 +692,11 @@ function appendTape(expr) {
                 resultVal = resultVal.toArray();
             }
 
-            if (Array.isArray(resultVal) && Array.isArray(resultVal[0])) {
+            if (typeof resultVal === 'string' && /^\d+\/\d+$/.test(resultVal)) {
+                const [num, den] = resultVal.split('/');
+                resultVal = `<span class="math-fraction"><span class="math-num">${num}</span><span class="math-den">${den}</span></span>`;
+                resultSpan.innerHTML = `= ${resultVal}`;
+            } else if (Array.isArray(resultVal) && Array.isArray(resultVal[0])) {
                 resultSpan.innerHTML = `= ${formatMatrixAsHTML(resultVal)}`;
             } else if (Array.isArray(resultVal)) {
                 resultSpan.textContent = `= [${resultVal.map(formatLocalNumber).join(', ')}]`;
@@ -297,7 +704,7 @@ function appendTape(expr) {
                 memory = resultVal;
                 resultSpan.textContent = `= ${formatLocalNumber(resultVal)}`;
             } else {
-                resultSpan.textContent = `= ${resultVal}`;
+                resultSpan.textContent = `= ${formatResultForTape(String(resultVal))}`;
             }
 
             rightContainer.appendChild(resultSpan);
@@ -305,7 +712,7 @@ function appendTape(expr) {
             headerDiv.appendChild(rightContainer);
             lineDiv.appendChild(headerDiv);
         }
-        
+
     } catch (err) {
         resultSpan.className = 'tape-result tape-error';
         resultSpan.textContent = `= Error`;
@@ -331,66 +738,235 @@ function appendTape(expr) {
     tapeContainer.scrollTop = tapeContainer.scrollHeight;
 }
 
-// Ventana Modal de Ayuda Independiente con funciones clickeables
-function openHelpModal(topic) {
-    // Eliminar modal anterior si existía
-    const existingModal = document.getElementById('help-modal');
+// Diccionario de documentación detallada para el manual (Segunda etapa)
+const HELP_DOCS = {
+    'arithmetic': {
+        title: 'Aritmética Exacta',
+        syntax: 'a / b + c / d',
+        description: 'RTCalc procesa operaciones fraccionarias manteniendo precisión matemática mediante notación de fracción vertical en lugar de redondeos decimales preliminares.',
+        example: '4/5 + 3/4',
+        graphType: null
+    },
+    'factor': {
+        title: 'Factorización Algebraica (factor)',
+        syntax: "factor('expresión')",
+        description: 'Factoriza polinomios detectando patrones de factor común, factor común por grupos, diferencia de cuadrados y trinomios cuadrados perfectos.',
+        example: "factor('x^2 - 9')",
+        graphType: null
+    },
+    'factors': {
+        title: 'Descomposición en Factores Primos (factors)',
+        syntax: 'factors(entero)',
+        description: 'Descompone un número entero mayor a 1 en sus factores primos expresados con sus respectivas potencias.',
+        example: 'factors(360)',
+        graphType: null
+    },
+    'mcd_mcm': {
+        title: 'Máximo Común Divisor y Mínimo Común Múltiplo',
+        syntax: 'mcd(a, b, ...) / mcm(a, b, ...)',
+        description: 'Calcula el MCD o MCM para dos o más números enteros pasados como argumentos.',
+        example: 'mcd(24, 36, 60)',
+        graphType: null
+    },
+    'solveLinear': {
+        title: 'Ecuaciones Lineales (solveLinear)',
+        syntax: 'solveLinear(a, b, c)',
+        description: 'Resuelve la ecuación de primer grado de la forma ax + b = c despejando la incógnita x.',
+        example: 'solveLinear(2, 4, 10)',
+        graphType: null
+    },
+    'solveQuad': {
+        title: 'Ecuaciones Cuadráticas (solveQuad)',
+        syntax: 'solveQuad(a, b, c)',
+        description: 'Obtiene las raíces de la ecuación cuadrática ax² + bx + c = 0 mediante la fórmula de Bhaskara, admitiendo raíces reales o complejas.',
+        example: 'solveQuad(1, -5, 6)',
+        graphType: null
+    },
+    'diophantine': {
+        title: 'Ecuaciones Diofánticas (diophantine)',
+        syntax: 'diophantine(a, b, c)',
+        description: 'Resuelve ecuaciones lineales diofánticas ax + by = c obteniendo la solución paramétrica en números enteros mediante el algoritmo extendido de Euclides.',
+        example: 'diophantine(35, 15, 50)',
+        graphType: null
+    },
+    'laplace': {
+        title: 'Transformada de Laplace (laplace)',
+        syntax: "laplace('f(t)')",
+        description: 'Obtiene la transformada analítica ℒ{f(t)} = F(s) utilizando la tabla fundamental de transformadas (potencias, exponenciales, senos y cosenos).',
+        example: "laplace('t^2')",
+        graphType: null
+    },
+    'congruent': {
+        title: 'Congruencia Modular (congruent)',
+        syntax: 'congruent(a, b, m)',
+        description: 'Evalúa la relación comparativa a ≡ b (mod m). Retorna verdadero si a y b dejan el mismo resto al dividirse por m.',
+        example: 'congruent(17, 5, 12)',
+        graphType: null
+    },
+    'derivative': {
+        title: 'Derivada Analítica (derivative)',
+        syntax: "derivative('expresión', 'variable')",
+        description: 'Calcula la derivada simbólica/analítica de una función con respecto a la variable especificada.',
+        example: "derivative('x^3 + 2*x', 'x')",
+        graphType: null
+    },
+    'integral': {
+        title: 'Integral Definida (integral)',
+        syntax: "integral('expresión', 'variable', a, b)",
+        description: 'Calcula la integral definida ∫_a^b f(x)dx mediante la regla numérica de Simpson.',
+        example: "integral('x^2', 'x', 0, 3)",
+        graphType: null
+    },
+    'limit': {
+        title: 'Límites Analíticos (limit)',
+        syntax: "limit('expresión', 'variable', punto)",
+        description: 'Evalúa el límite lateral de una función en un punto dado. Detecta si el límite no existe (∄) o tiende a infinito.',
+        example: "limit('1/x', 'x', 0)",
+        graphType: null
+    },
+    'fourier': {
+        title: 'Análisis y Serie de Fourier (fourier)',
+        syntax: "fourier('f(x)', N)",
+        description: 'Reconstruye la función f(x) en [-π, π] mediante la suma parcial de sus armónicos hasta el grado N y grafica la función original superpuesta a su aproximación.',
+        example: "fourier('x', 5)",
+        graphType: '2d',
+        graphData: { vars: ['x'], body: 'x, 2*sin(x) - sin(2*x) + (2/3)*sin(3*x) - (1/2)*sin(4*x) + (2/5)*sin(5*x)' }
+    },
+    'matrices': {
+        title: 'Álgebra Matricial (inv, det)',
+        syntax: 'inv(matriz) / det(matriz)',
+        description: 'Resuelve operaciones con matrices utilizando corchetes anidados [[a,b],[c,d]] y las renderiza en la cinta con corchetes de notación algebraica.',
+        example: 'inv([[4, 7], [2, 6]])',
+        graphType: null
+    },
+    'plots': {
+        title: 'Gráficos 2D y 3D f(x)',
+        syntax: 'f(x) = ... / f(x, y) = ...',
+        description: 'Trazado automático interactivo de curvas planas o superficies 3D en la cinta de papel con controles Plotly.js.',
+        example: 'f(x, y) = x^2 - y^2',
+        graphType: '3d',
+        graphData: { vars: ['x', 'y'], body: 'x^2 - y^2' }
+    }
+};
+
+// ETAPA 1: Modal Principal (Tabla resumen)
+function openHelpModal() {
+    const existingModal = document.getElementById('man-help-modal');
     if (existingModal) existingModal.remove();
 
-    const overlay = document.createElement('div');
-    overlay.id = 'help-modal';
-    overlay.className = 'help-modal-overlay';
+    const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'man-help-modal';
+    modalOverlay.className = 'help-modal-overlay';
 
-    let contentHTML = '';
-
-    if (!topic) {
-        contentHTML = `
-            <div style="font-weight:bold; margin-bottom:8px; color:#0066cc;">--- MANUAL DE COMANDOS Y FUNCIONES ---</div>
-            <p style="color:#86868b; margin-top:0;">Hacé clic en cualquier función para insertarla automáticamente en la calculadora.</p>
-            <table style="width:100%; border-collapse:collapse; font-size:13px;">
-              <tr><td style="padding:4px 0; width:35%;"><b>Aritmética básica</b></td><td>+ , - , * , / , <span class="help-clickable-item" onclick="insertCommand('^')">^</span> (potencia), <span class="help-clickable-item" onclick="insertCommand('sqrt(x)')">sqrt</span></td></tr>
-              <tr><td style="padding:4px 0;"><b>Trigonometría</b></td><td><span class="help-clickable-item" onclick="insertCommand('sin(x)')">sin</span>, <span class="help-clickable-item" onclick="insertCommand('cos(x)')">cos</span>, <span class="help-clickable-item" onclick="insertCommand('tan(x)')">tan</span></td></tr>
-              <tr><td style="padding:4px 0;"><b>Logaritmos</b></td><td><span class="help-clickable-item" onclick="insertCommand('ln(x)')">ln</span>, <span class="help-clickable-item" onclick="insertCommand('log(x)')">log</span></td></tr>
-              <tr><td style="padding:4px 0;"><b>Estadística</b></td><td><span class="help-clickable-item" onclick="insertCommand('mean([1, 2, 3])')">mean</span>, <span class="help-clickable-item" onclick="insertCommand('median([1, 2, 3])')">median</span>, <span class="help-clickable-item" onclick="insertCommand('std([1, 2, 3])')">std</span>, <span class="help-clickable-item" onclick="insertCommand('variance([1, 2, 3])')">variance</span>, <span class="help-clickable-item" onclick="insertCommand('min([1, 2, 3])')">min</span>, <span class="help-clickable-item" onclick="insertCommand('max([1, 2, 3])')">max</span></td></tr>
-              <tr><td style="padding:4px 0;"><b>Cálculo</b></td><td><span class="help-clickable-item" onclick="insertCommand('derivative(\'x^2\', \'x\')')">derivative</span>, <span class="help-clickable-item" onclick="insertCommand('deriv(\'x^2\', \'x\', 2)')">deriv</span>, <span class="help-clickable-item" onclick="insertCommand('integral(\'x^2\', \'x\', 0, 3)')">integral</span></td></tr>
-              <tr><td style="padding:4px 0;"><b>Gráficas 2D/3D</b></td><td><span class="help-clickable-item" onclick="insertCommand('f(x) = x^2 - 4')">f(x) = ...</span>, <span class="help-clickable-item" onclick="insertCommand('f(x, y) = x^2 - y^2')">f(x, y) = ...</span></td></tr>
-            </table>
-        `;
-    } else {
-        const detailedManuals = {
-            'sqrt': `<b>[sqrt] Raíz cuadrada</b><br>Sintaxis: <code>sqrt(número)</code><br>Ejemplo: <span class="help-clickable-item" onclick="insertCommand('sqrt(25)')">sqrt(25)</span> -> 5`,
-            'log': `<b>[log] Logaritmo base 10</b><br>Sintaxis: <code>log(número)</code><br>Ejemplo: <span class="help-clickable-item" onclick="insertCommand('log(100)')">log(100)</span> -> 2`,
-            'ln': `<b>[ln] Logaritmo natural</b><br>Sintaxis: <code>ln(número)</code><br>Ejemplo: <span class="help-clickable-item" onclick="insertCommand('ln(2.71828)')">ln(2.71828)</span> -> 1`,
-            'derivative': `<b>[derivative] Derivada simbólica</b><br>Sintaxis: <code>derivative('expresión', 'variable')</code><br>Ejemplo: <span class="help-clickable-item" onclick="insertCommand('derivative(\'x^3 + 2*x\', \'x\')')">derivative('x^3 + 2*x', 'x')</span>`,
-            'deriv': `<b>[deriv] Derivada numérica puntual</b><br>Sintaxis: <code>deriv('expresión', 'variable', valor)</code><br>Ejemplo: <span class="help-clickable-item" onclick="insertCommand('deriv(\'x^2\', \'x\', 3)')">deriv('x^2', 'x', 3)</span>`,
-            'integral': `<b>[integral] Integral definida</b><br>Sintaxis: <code>integral('expresión', 'variable', a, b)</code><br>Ejemplo: <span class="help-clickable-item" onclick="insertCommand('integral(\'x^2\', \'x\', 0, 3)')">integral('x^2', 'x', 0, 3)</span>`,
-            'mean': `<b>[mean] Promedio estadístico</b><br>Sintaxis: <code>mean([lista])</code><br>Ejemplo: <span class="help-clickable-item" onclick="insertCommand('mean([10, 20, 30])')">mean([10, 20, 30])</span>`
-        };
-        contentHTML = detailedManuals[topic] || `No hay detalles específicos para "<b>${topic}</b>".`;
-    }
-
-    overlay.innerHTML = `
-        <div class="help-modal-card">
+    modalOverlay.innerHTML = `
+        <div class="help-modal-content">
             <div class="help-modal-header">
-                <span>MANUAL DE AYUDA // RTFCALC</span>
-                <button class="help-modal-close" onclick="document.getElementById('help-modal').remove()">[ X ]</button>
+                <h2>Manual de Usuario (man)</h2>
+                <button class="help-close-btn" id="close-help-btn">&times;</button>
             </div>
             <div class="help-modal-body">
-                ${contentHTML}
+                <table class="help-table">
+                    <thead>
+                        <tr><th>Categoría</th><th>Comando / Sintaxis</th><th>Detalles</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><b>Aritmética</b></td><td><span class="help-clickable-item" data-cmd="4/5 + 3/4">4/5 + 3/4</span></td><td><button class="help-doc-btn" data-key="arithmetic">📖 Ver más</button></td></tr>
+                        <tr><td><b>Factoreo</b></td><td><span class="help-clickable-item" data-cmd="factor('x^2 - 9')">factor('expr')</span></td><td><button class="help-doc-btn" data-key="factor">📖 Ver más</button></td></tr>
+                        <tr><td><b>Primos</b></td><td><span class="help-clickable-item" data-cmd="factors(360)">factors(n)</span></td><td><button class="help-doc-btn" data-key="factors">📖 Ver más</button></td></tr>
+                        <tr><td><b>MCD / MCM</b></td><td><span class="help-clickable-item" data-cmd="mcd(24, 36, 60)">mcd(...) / mcm(...)</span></td><td><button class="help-doc-btn" data-key="mcd_mcm">📖 Ver más</button></td></tr>
+                        <tr><td><b>Ecuaciones</b></td><td><span class="help-clickable-item" data-cmd="solveLinear(2, 4, 10)">solveLinear(a, b, c)</span></td><td><button class="help-doc-btn" data-key="solveLinear">📖 Ver más</button></td></tr>
+                        <tr><td><b>Transformadas</b></td><td><span class="help-clickable-item" data-cmd="laplace('t^2')">laplace('expr')</span></td><td><button class="help-doc-btn" data-key="laplace">📖 Ver más</button></td></tr>
+                        <tr><td><b>Mat. Discreta</b></td><td><span class="help-clickable-item" data-cmd="congruent(17, 5, 12)">congruent(a, b, m)</span></td><td><button class="help-doc-btn" data-key="congruent">📖 Ver más</button></td></tr>
+                        <tr><td><b>Cuadráticas</b></td><td><span class="help-clickable-item" data-cmd="solveQuad(1, -5, 6)">solveQuad(a, b, c)</span></td><td><button class="help-doc-btn" data-key="solveQuad">📖 Ver más</button></td></tr>
+                        <tr><td><b>Diofánticas</b></td><td><span class="help-clickable-item" data-cmd="diophantine(35, 15, 50)">diophantine(a, b, c)</span></td><td><button class="help-doc-btn" data-key="diophantine">📖 Ver más</button></td></tr>
+                        <tr><td><b>Cálculo</b></td><td><span class="help-clickable-item" data-cmd="derivative('x^3 + 2*x', 'x')">derivative('expr', 'var')</span></td><td><button class="help-doc-btn" data-key="derivative">📖 Ver más</button></td></tr>
+                        <tr><td><b>Integrales</b></td><td><span class="help-clickable-item" data-cmd="integral('x^2', 'x', 0, 3)">integral('expr', 'v', a, b)</span></td><td><button class="help-doc-btn" data-key="integral">📖 Ver más</button></td></tr>
+                        <tr><td><b>Límites</b></td><td><span class="help-clickable-item" data-cmd="limit('1/x', 'x', 0)">limit('expr', 'v', target)</span></td><td><button class="help-doc-btn" data-key="limit">📖 Ver más</button></td></tr>
+                        <tr><td><b>Fourier</b></td><td><span class="help-clickable-item" data-cmd="fourier('x', 5)">fourier('expr', N)</span></td><td><button class="help-doc-btn" data-key="fourier">📖 Ver más</button></td></tr>
+                        <tr><td><b>Matrices</b></td><td><span class="help-clickable-item" data-cmd="inv([[4, 7], [2, 6]])">inv(...) / det(...)</span></td><td><button class="help-doc-btn" data-key="matrices">📖 Ver más</button></td></tr>
+                        <tr><td><b>Gráficos</b></td><td><span class="help-clickable-item" data-cmd="f(x) = x^2 - 4">f(x) = ... / f(x, y) = ...</span></td><td><button class="help-doc-btn" data-key="plots">📖 Ver más</button></td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     `;
 
-    document.body.appendChild(overlay);
+    document.body.appendChild(modalOverlay);
+
+    document.getElementById('close-help-btn').addEventListener('click', () => modalOverlay.remove());
+
+    // Insertar comando al hacer clic en la sintaxis
+    modalOverlay.querySelectorAll('.help-clickable-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const cmd = item.getAttribute('data-cmd');
+            if (inputField) {
+                inputField.value = cmd;
+                inputField.focus();
+            }
+            modalOverlay.remove();
+        });
+    });
+
+    // Abrir modal de detalle (Segunda etapa)
+    modalOverlay.querySelectorAll('.help-doc-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const key = btn.getAttribute('data-key');
+            openCommandDetailModal(key);
+        });
+    });
 }
 
-// Función global accesible desde el HTML generado para insertar comandos al hacer clic
-window.insertCommand = function(cmd) {
-    inputField.value = cmd;
-    inputField.focus();
-    const modal = document.getElementById('help-modal');
-    if (modal) modal.remove();
-};
+// ETAPA 2: Modal Secundario con detalle y gráfico de previsualización
+function openCommandDetailModal(key) {
+    const doc = HELP_DOCS[key];
+    if (!doc) return;
+
+    const detailOverlay = document.createElement('div');
+    detailOverlay.id = 'man-detail-modal';
+    detailOverlay.className = 'help-modal-overlay';
+    detailOverlay.style.zIndex = '100000'; // Sobre el modal principal
+
+    detailOverlay.innerHTML = `
+        <div class="help-modal-content help-detail-content">
+            <div class="help-modal-header">
+                <h2>${doc.title}</h2>
+                <button class="help-close-btn" id="close-detail-btn">&times;</button>
+            </div>
+            <div class="help-modal-body">
+                <p><b>Sintaxis:</b> <code>${doc.syntax}</code></p>
+                <p>${doc.description}</p>
+                <hr style="border:0; border-top:1px solid #e5e5ea; margin: 12px 0;">
+                <p><b>Ejemplo de uso:</b></p>
+                <div class="help-example-box" id="insert-example-btn" title="Hacé clic para insertar en el campo de entrada">
+                    <code>${doc.example}</code> <span>(Clic para probar)</span>
+                </div>
+                ${doc.graphType ? '<div id="help-doc-plot" style="width:100%; height:220px; margin-top:12px;"></div>' : ''}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(detailOverlay);
+
+    document.getElementById('close-detail-btn').addEventListener('click', () => detailOverlay.remove());
+
+    document.getElementById('insert-example-btn').addEventListener('click', () => {
+        if (inputField) {
+            inputField.value = doc.example;
+            inputField.focus();
+        }
+        detailOverlay.remove();
+        const mainModal = document.getElementById('man-help-modal');
+        if (mainModal) mainModal.remove();
+    });
+
+    // Renderizado del gráfico en el modal secundario si corresponde
+    if (doc.graphType && doc.graphData) {
+        setTimeout(() => {
+            renderInlineGraph(doc.graphData.vars, doc.graphData.body, 'help-doc-plot');
+        }, 100);
+    }
+}
 
 function renderInlineGraph(vars, bodyExpr, containerId) {
     const container = document.getElementById(containerId);
@@ -413,7 +989,11 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
             const row = [];
             for (let x of xValues) {
                 try {
-                    const val = compiled.evaluate({ x: x, y: y, ...customScope });
+                    const val = compiled.evaluate({
+                        x,
+                        y,
+                        ...customScope
+                    });
                     row.push(typeof val === 'number' && !isNaN(val) && isFinite(val) ? val : null);
                 } catch {
                     row.push(null);
@@ -431,25 +1011,42 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
         }];
 
         const layout = {
-            margin: { t: 10, b: 10, l: 10, r: 10 },
-            font: { family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', size: 11, color: '#1d1d1f' },
+            margin: {
+                t: 10,
+                b: 10,
+                l: 10,
+                r: 10
+            },
+            font: {
+                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                size: 11,
+                color: '#1d1d1f'
+            },
             scene: {
-                xaxis: { title: vars[0] || 'X' },
-                yaxis: { title: vars[1] || 'Y' },
-                zaxis: { title: 'Z' }
+                xaxis: {
+                    title: vars[0] || 'X'
+                },
+                yaxis: {
+                    title: vars[1] || 'Y'
+                },
+                zaxis: {
+                    title: 'Z'
+                }
             },
             paper_bgcolor: 'transparent',
             plot_bgcolor: 'transparent'
         };
 
-        Plotly.newPlot(container, data, layout, { responsive: true, displayModeBar: false });
+        Plotly.newPlot(container, data, layout, {
+            responsive: true,
+            displayModeBar: false
+        });
 
     } else {
         const expressions = bodyExpr.split(',').map(e => e.trim());
         const traces = [];
         const xValues = [];
-        
-        // Rango simétrico de -10 a 10 con paso de 0.1
+
         for (let x = -10; x <= 10; x += 0.1) {
             xValues.push(Number(x.toFixed(2)));
         }
@@ -460,14 +1057,15 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
                 const compiled = node.compile();
                 const yValues = xValues.map(x => {
                     try {
-                        const y = compiled.evaluate({ [vars[0]]: x, ...customScope });
+                        const y = compiled.evaluate({
+                            [vars[0]]: x,
+                            ...customScope
+                        });
                         return (typeof y === 'number' && !isNaN(y) && isFinite(y)) ? y : null;
                     } catch {
                         return null;
                     }
                 });
-
-                const color = vibrantColors[index % vibrantColors.length];
 
                 traces.push({
                     x: xValues,
@@ -475,7 +1073,10 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
                     type: 'scatter',
                     mode: 'lines',
                     name: expr,
-                    line: { color: color, width: 3 }
+                    line: {
+                        color: vibrantColors[index % vibrantColors.length],
+                        width: 3
+                    }
                 });
             } catch (e) {
                 console.error(`Error evaluando ${expr}`, e);
@@ -483,15 +1084,37 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
         });
 
         const layout = {
-            margin: { t: 10, b: 30, l: 30, r: 10 },
-            font: { family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', size: 11, color: '#1d1d1f' },
-            xaxis: { title: vars[0] || 'x', gridcolor: '#e5e5ea' },
-            yaxis: { title: 'y', gridcolor: '#e5e5ea' },
-            legend: { orientation: 'h', y: 1.2, x: 0 },
+            margin: {
+                t: 10,
+                b: 30,
+                l: 30,
+                r: 10
+            },
+            font: {
+                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                size: 11,
+                color: '#1d1d1f'
+            },
+            xaxis: {
+                title: vars[0] || 'x',
+                gridcolor: '#e5e5ea'
+            },
+            yaxis: {
+                title: 'y',
+                gridcolor: '#e5e5ea'
+            },
+            legend: {
+                orientation: 'h',
+                y: 1.2,
+                x: 0
+            },
             paper_bgcolor: 'transparent',
             plot_bgcolor: 'transparent'
         };
 
-        Plotly.newPlot(container, traces, layout, { responsive: true, displayModeBar: false });
+        Plotly.newPlot(container, traces, layout, {
+            responsive: true,
+            displayModeBar: false
+        });
     }
 }

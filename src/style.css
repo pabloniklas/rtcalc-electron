@@ -1,11 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@300;400;600&family=Iosevka+Charon+Mono:ital,wght@0,300;0,400;0,600;1,400&display=swap');
+
+/* 1. TIPOGRAFÍA GLOBAL (IBM Plex Sans Condensed para la interfaz UI) */
+*, *::before, *::after {
+    box-sizing: border-box;
+    font-family: 'IBM Plex Sans Condensed', -apple-system, sans-serif !important;
+}
 
 body {
     margin: 0;
     padding: 0;
     background-color: #f5f5f7;
     color: #1d1d1f;
-    font-family: 'Share Tech Mono', monospace;
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -17,10 +22,30 @@ body {
     flex-direction: column;
     height: 100vh;
     padding: 16px;
-    box-sizing: border-box;
     gap: 12px;
 }
 
+/* 2. EXCEPCIONES: La cinta de historial, prompt e input utilizan Iosevka Charon Mono */
+.tape-container,
+.tape-container *,
+.tape-welcome,
+.tape-line,
+.tape-expression,
+.tape-result,
+.tape-error,
+.math-fraction,
+.math-integral,
+.math-limits,
+.math-derivative,
+.math-limit,
+.math-matrix,
+.prompt,
+#calc-input,
+.input-panel input[type="text"] {
+    font-family: 'Iosevka Charon Mono', 'Courier New', monospace !important;
+}
+
+/* Contenedor principal de la cinta */
 .tape-container {
     flex: 1;
     background-color: #ffffff;
@@ -39,7 +64,6 @@ body {
     font-style: italic;
     font-size: 13px;
     margin-bottom: 4px;
-    font-family: 'Share Tech Mono', monospace;
 }
 
 .tape-line {
@@ -62,52 +86,76 @@ body {
 
 .tape-expression {
     color: #0066cc;
-    font-family: 'Share Tech Mono', monospace;
     font-weight: bold;
 }
 
 .tape-result {
     color: #28a745;
     font-weight: bold;
-    font-family: 'Share Tech Mono', monospace;
 }
 
 .tape-error {
     color: #d9534f;
 }
 
+/* Panel de entrada */
 .input-panel {
     display: flex;
     align-items: center;
+    gap: 8px;
+    padding: 12px;
     background-color: #ffffff;
     border: 1px solid #d2d2d7;
     border-radius: 8px;
-    padding: 10px 14px;
-    gap: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    flex-shrink: 0; 
 }
 
 .prompt {
-    color: #0066cc;
     font-weight: bold;
-    font-family: 'Share Tech Mono', monospace;
+    color: #0066cc;
+    margin-right: 4px;
 }
 
-.input-panel input {
+.input-panel input[type="text"] {
     flex: 1;
-    background: transparent;
     border: none;
-    color: #1d1d1f;
-    font-size: 16px;
-    font-family: 'Share Tech Mono', monospace;
-}
-
-.input-panel input:focus {
     outline: none;
+    font-size: 15px;
+    color: #1d1d1f;
+    background: transparent;
 }
 
-/* Estilos para la ventana modal de ayuda */
+/* Botón de Submit / Calcular */
+.submit-btn {
+    color: #28a745;
+    font-size: 11px;
+}
+
+.submit-btn:hover {
+    background-color: #e8f5e9;
+    border-color: #28a745;
+}
+
+.action-btn {
+    background-color: #f5f5f7;
+    border: 1px solid #d2d2d7;
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.action-btn:hover {
+    background-color: #e5e5ea;
+    border-color: #b0b0b5;
+}
+
+/* Modal de Ayuda (man) */
 .help-modal-overlay {
     position: fixed;
     top: 0;
@@ -115,23 +163,23 @@ body {
     width: 100vw;
     height: 100vh;
     background-color: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(3px);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 99999;
 }
 
-.help-modal-card {
-    background-color: #ffffff;
-    border: 1px solid #d2d2d7;
-    border-radius: 12px;
-    width: 600px;
+.help-modal-content {
+    background: #ffffff;
+    width: 80%;
+    max-width: 750px;
     max-height: 80vh;
+    border-radius: 12px;
+    border: 1px solid #d2d2d7;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-    font-family: 'Share Tech Mono', monospace;
     overflow: hidden;
 }
 
@@ -146,13 +194,18 @@ body {
     color: #0066cc;
 }
 
-.help-modal-close {
+.help-modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    color: #1d1d1f;
+}
+
+.help-close-btn {
     background: none;
     border: none;
-    font-size: 16px;
+    font-size: 24px;
     cursor: pointer;
-    color: #1d1d1f;
-    font-family: 'Share Tech Mono', monospace;
+    color: #86868b;
 }
 
 .help-modal-body {
@@ -162,20 +215,82 @@ body {
     line-height: 1.5;
 }
 
-.help-clickable-item {
-    cursor: pointer;
-    color: #0066cc;
-    transition: background 0.2s, padding 0.2s;
-    border-radius: 4px;
-    padding: 2px 4px;
+.help-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 13px;
 }
 
-.help-clickable-item:hover {
-    background-color: #f0f0f2;
+.help-table th, .help-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e5e5ea;
+}
+
+.help-table th {
+    background-color: #f5f5f7;
+    color: #1d1d1f;
+}
+
+.help-clickable-item {
+    color: #0066cc;
+    cursor: pointer;
     text-decoration: underline;
 }
 
-/* Estilo para fracciones matemáticas en la cinta */
+.help-clickable-item:hover {
+    color: #004080;
+}
+
+.help-doc-btn {
+    background-color: #f5f5f7;
+    border: 1px solid #d2d2d7;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.help-doc-btn:hover {
+    background-color: #0066cc;
+    color: #ffffff;
+    border-color: #0066cc;
+}
+
+/* Modal de Detalle (Etapa 2) */
+.help-detail-content {
+    max-width: 600px;
+}
+
+.help-example-box {
+    background-color: #f5f5f7;
+    border: 1px dashed #0066cc;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #0066cc;
+    transition: background 0.2s;
+}
+
+.help-example-box:hover {
+    background-color: #e8f2ff;
+}
+
+.help-example-box code {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.help-example-box span {
+    font-size: 11px;
+    color: #86868b;
+}
+
+/* Notación Matemática en la cinta */
 .math-fraction {
     display: inline-flex;
     flex-direction: column;
@@ -195,13 +310,11 @@ body {
     padding-top: 1px;
 }
 
-/* Estilos para integrales y derivadas tipográficas en la cinta */
 .math-integral {
     display: inline-flex;
     align-items: center;
     vertical-align: middle;
     gap: 4px;
-    font-family: 'Share Tech Mono', monospace;
 }
 
 .math-limits {
@@ -218,17 +331,9 @@ body {
     line-height: 1;
 }
 
-.math-sup {
-    margin-bottom: -2px;
-}
-
-.math-sub {
-    margin-top: -2px;
-}
-
-.math-body {
-    margin: 0 2px;
-}
+.math-sup { margin-bottom: -2px; }
+.math-sub { margin-top: -2px; }
+.math-body { margin: 0 2px; }
 
 .math-diff {
     font-style: italic;
@@ -251,13 +356,11 @@ body {
     vertical-align: middle;
 }
 
-/* Estilos para límites matemáticos en la cinta */
 .math-limit {
     display: inline-flex;
     align-items: baseline;
     vertical-align: middle;
     gap: 4px;
-    font-family: 'Share Tech Mono', monospace;
 }
 
 .math-lim-text {
@@ -272,12 +375,10 @@ body {
     margin-right: 2px;
 }
 
-/* Estilos para matrices visuales en la cinta */
 .math-matrix {
     display: inline-flex;
     align-items: center;
     vertical-align: middle;
-    font-family: 'Share Tech Mono', monospace;
     margin: 0 4px;
 }
 
@@ -304,16 +405,67 @@ body {
 .mat-cell {
     min-width: 24px;
     text-align: center;
-    font-size: 0.9em;
+    font-size: 0.85em;
 }
 
-/* Ajustes para funciones con matrices a la izquierda */
 .math-func-op {
     font-weight: bold;
     color: #1d1d1f;
 }
 
-.math-matrix .mat-cell {
-    font-size: 0.85em;
-    min-width: 18px;
+/* Modal Splash */
+.splash-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: splashFadeOut 3.5s ease forwards;
+    pointer-events: none;
+}
+
+.splash-content {
+    background: #ffffff;
+    padding: 30px 45px;
+    border-radius: 12px;
+    border: 1px solid #d2d2d7;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.splash-content h2 {
+    margin: 0 0 8px 0;
+    font-size: 24px;
+    color: #1d1d1f;
+}
+
+.splash-content p {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #86868b;
+}
+
+.splash-version {
+    font-size: 12px;
+    color: #0066cc;
+}
+
+.splash-logo {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 12px;
+    object-fit: contain;
+}
+
+@keyframes splashFadeOut {
+    0% { opacity: 0; transform: scale(0.96); }
+    15% { opacity: 1; transform: scale(1); }
+    75% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; visibility: hidden; }
 }

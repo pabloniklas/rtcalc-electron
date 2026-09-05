@@ -69,6 +69,52 @@ const customScope = {
         const avg = (valLeft + valRight) / 2;
         return isNaN(avg) ? "∄" : avg;
     },
+    // Ecuación lineal: ax + b = c -> devuelve el valor de x
+    solveLinear: function(a, b, c) {
+        // Resuelve a*x + b = c  =>  x = (c - b) / a
+        return (c - b) / a;
+    },
+
+    // Ecuación cuadrática: ax^2 + bx + c = 0 -> devuelve las raíces (reales o complejas)
+    solveQuad: function(a, b, c) {
+        const discriminant = b * b - 4 * a * c;
+        if (discriminant > 0) {
+            const x1 = (-b + Math.sqrt(discriminant)) / (2 * a);
+            const x2 = (-b - Math.sqrt(discriminant)) / (2 * a);
+            return [`x₁ = ${formatLocalNumber(x1)}`, `x₂ = ${formatLocalNumber(x2)}`];
+        } else if (discriminant === 0) {
+            const x = -b / (2 * a);
+            return [`x = ${formatLocalNumber(x)} (raíz doble)`];
+        } else {
+            const real = formatLocalNumber(-b / (2 * a));
+            const imag = formatLocalNumber(Math.sqrt(-discriminant) / (2 * a));
+            return [`x₁ = ${real} + ${imag}i`, `x₂ = ${real} - ${imag}i`];
+        }
+    },
+
+    // Ecuación diofántica lineal: ax + by = c
+    diophantine: function(a, b, c) {
+        function extendedGCD(a, b) {
+            if (b === 0) return [1, 0, a];
+            const [x1, y1, gcd] = extendedGCD(b, a % b);
+            const x = y1;
+            const y = x1 - Math.floor(a / b) * y1;
+            return [x, y, gcd];
+        }
+
+        const [x0_base, y0_base, gcd] = extendedGCD(a, b);
+        if (c % gcd !== 0) {
+            return "No tiene solución entera (gcd no divide a c)";
+        }
+
+        const factor = c / gcd;
+        const x0 = x0_base * factor;
+        const y0 = y0_base * factor;
+        const stepX = b / gcd;
+        const stepY = a / gcd;
+
+        return `x = ${x0} + ${stepX}k,  y = ${y0} - ${stepY}k  (k ∈ ℤ)`;
+    },
     ans: () => memory
 };
 
@@ -105,6 +151,17 @@ inputField.addEventListener('keydown', (e) => {
         }
     }
 });
+
+function formatMatrixAsHTML(mat) {
+    if (!Array.isArray(mat) || !Array.isArray(mat[0])) return mat;
+
+    let rowsHTML = mat.map(row => {
+        let cols = row.map(val => `<span class="mat-cell">${typeof val === 'number' ? formatLocalNumber(val) : val}</span>`).join('');
+        return `<span class="mat-row">${cols}</span>`;
+    }).join('');
+
+    return `<span class="math-matrix"><span class="mat-bracket">[</span><span class="mat-rows">${rowsHTML}</span><span class="mat-bracket">]</span></span>`;
+}
 
 function formatExpressionForTape(expr) {
     let formatted = expr;
@@ -204,7 +261,15 @@ function appendTape(expr) {
 
             if (typeof resultVal === 'function') throw new Error("Expresión incompleta");
 
-            if (typeof resultVal === 'number') {
+            if (resultVal && typeof resultVal.toArray === 'function') {
+                resultVal = resultVal.toArray();
+            }
+
+            if (Array.isArray(resultVal) && Array.isArray(resultVal[0])) {
+                resultSpan.innerHTML = `= ${formatMatrixAsHTML(resultVal)}`;
+            } else if (Array.isArray(resultVal)) {
+                resultSpan.textContent = `= [${resultVal.map(formatLocalNumber).join(', ')}]`;
+            } else if (typeof resultVal === 'number') {
                 memory = resultVal;
                 resultSpan.textContent = `= ${formatLocalNumber(resultVal)}`;
             } else {
@@ -216,6 +281,7 @@ function appendTape(expr) {
             headerDiv.appendChild(rightContainer);
             lineDiv.appendChild(headerDiv);
         }
+        
     } catch (err) {
         resultSpan.className = 'tape-result tape-error';
         resultSpan.textContent = `= Error`;

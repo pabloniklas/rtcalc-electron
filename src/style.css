@@ -271,3 +271,38 @@ body {
     margin-left: -2px;
     margin-right: 2px;
 }
+
+/* Estilos para matrices visuales en la cinta */
+.math-matrix {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0 4px;
+}
+
+.mat-bracket {
+    font-size: 1.8em;
+    font-weight: 300;
+    color: #1d1d1f;
+    line-height: 1;
+}
+
+.mat-rows {
+    display: inline-flex;
+    flex-direction: column;
+    margin: 0 4px;
+    gap: 2px;
+}
+
+.mat-row {
+    display: inline-flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.mat-cell {
+    min-width: 24px;
+    text-align: center;
+    font-size: 0.9em;
+}

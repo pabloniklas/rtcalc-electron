@@ -166,7 +166,31 @@ function formatMatrixAsHTML(mat) {
 function formatExpressionForTape(expr) {
     let formatted = expr;
 
-    // 1. Formatear integrales: integral('expr', 'var', a, b) -> ∫_a^b expr d(var)
+    // Función auxiliar para convertir corchetes de matrices de texto en HTML estructurado
+    const cleanMatrixInString = (matStr) => {
+        try {
+            // Evaluar de forma segura la estructura de la matriz para limpiarla
+            const parsed = JSON.parse(matStr.replace(/'/g, '"'));
+            if (Array.isArray(parsed) && Array.isArray(parsed[0])) {
+                let rowsHTML = parsed.map(row => {
+                    let cols = row.map(val => `<span class="mat-cell">${val}</span>`).join('');
+                    return `<span class="mat-row">${cols}</span>`;
+                }).join('');
+                return `<span class="math-matrix"><span class="mat-bracket">[</span><span class="mat-rows">${rowsHTML}</span><span class="mat-bracket">]</span></span>`;
+            }
+        } catch (e) {
+            // Si falla el parseo, retorna el texto original de la matriz
+        }
+        return matStr;
+    };
+
+    // 1. Formatear matrices dentro de funciones como inv, det, transpose, etc.
+    formatted = formatted.replace(/(inv|det|transpose|eigenvalues)\s*\(\s*(\[[\s\S]*?\])\s*\)/gi, (match, func, matContent) => {
+        const formattedMat = cleanMatrixInString(matContent);
+        return `<span class="math-func-op">${func}</span>(${formattedMat})`;
+    });
+
+    // 2. Formatear integrales: integral('expr', 'var', a, b) -> ∫_a^b expr d(var)
     formatted = formatted.replace(/integral\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi, (match, body, v, a, b) => {
         const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => {
             const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
@@ -175,16 +199,25 @@ function formatExpressionForTape(expr) {
         return `<span class="math-integral"><span class="math-limits"><span class="math-sup">${b}</span><span class="math-symbol">∫</span><span class="math-sub">${a}</span></span><span class="math-body">${bodyClean}</span><span class="math-diff">d${v}</span></span>`;
     });
 
-    // 2. Formatear derivadas analíticas: derivative('expr', 'var') -> d/d(var) [expr]
+    // 3. Formatear derivadas analíticas: derivative('expr', 'var') -> d/d(var) [expr]
     formatted = formatted.replace(/derivative\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)/gi, (match, body, v) => {
         const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => {
             const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
             return `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`;
         });
-        return `<span class="math-derivative"><span class="math-frac-deriv"><span class="math-num">d</span><span class="math-den">d${v}</span></span><span class="math-bracket">[${bodyClean}]</span></span>`;
+        return `<span class="math-derivative"><span class="math-frac-deriv"><span class="math-num">d</span><span class="math-den">d${v}</span></span><span class="math-bracket-custom">[${bodyClean}]</span></span>`;
     });
 
-    // 3. Formatear potencias y multiplicaciones estándar
+    // 4. Formatear límites: limit('expr', 'var', val) -> lim_(var→val) expr
+    formatted = formatted.replace(/limit\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*([^)]+)\s*\)/gi, (match, body, v, target) => {
+        const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => {
+            const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+            return `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`;
+        });
+        return `<span class="math-limit"><span class="math-lim-text">lim</span><span class="math-lim-sub">${v}→${target}</span><span class="math-body">${bodyClean}</span></span>`;
+    });
+
+    // 5. Formatear potencias y multiplicaciones estándar
     formatted = formatted
         .replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (match, base, exp) => {
             const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
@@ -192,18 +225,9 @@ function formatExpressionForTape(expr) {
         })
         .replace(/\*/g, ' · ');
 
-    // 4. Formatear fracciones simples (ej: 4/5)
+    // 6. Formatear fracciones simples (ej: 4/5)
     formatted = formatted.replace(/(\b\w+|\d+)\s*\/\s*(\b\w+|\d+\b)/g, (match, num, den) => {
         return `<span class="math-fraction"><span class="math-num">${num}</span><span class="math-den">${den}</span></span>`;
-    });
-
-    // Formatear límites: limit('expr', 'var', val) -> lim_(var→val) expr
-    formatted = formatted.replace(/limit\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*([^)]+)\s*\)/gi, (match, body, v, target) => {
-        const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => {
-            const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
-            return `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`;
-        });
-        return `<span class="math-limit"><span class="math-lim-text">lim</span><span class="math-lim-sub">${v}→${target}</span><span class="math-body">${bodyClean}</span></span>`;
     });
 
     return formatted;

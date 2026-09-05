@@ -306,3 +306,14 @@ body {
     text-align: center;
     font-size: 0.9em;
 }
+
+/* Ajustes para funciones con matrices a la izquierda */
+.math-func-op {
+    font-weight: bold;
+    color: #1d1d1f;
+}
+
+.math-matrix .mat-cell {
+    font-size: 0.85em;
+    min-width: 18px;
+}

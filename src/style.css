@@ -1,0 +1,273 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f7;
+    color: #1d1d1f;
+    font-family: 'Share Tech Mono', monospace;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.calculator-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 16px;
+    box-sizing: border-box;
+    gap: 12px;
+}
+
+.tape-container {
+    flex: 1;
+    background-color: #ffffff;
+    border: 1px solid #d2d2d7;
+    border-radius: 8px;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tape-welcome {
+    color: #86868b;
+    font-style: italic;
+    font-size: 13px;
+    margin-bottom: 4px;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.tape-line {
+    display: flex;
+    flex-direction: column;
+    word-break: break-all;
+    font-size: 15px;
+    border-bottom: 1px solid #f0f0f2;
+    padding-bottom: 12px;
+    margin-bottom: 4px;
+    gap: 8px;
+}
+
+.tape-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.tape-expression {
+    color: #0066cc;
+    font-family: 'Share Tech Mono', monospace;
+    font-weight: bold;
+}
+
+.tape-result {
+    color: #28a745;
+    font-weight: bold;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.tape-error {
+    color: #d9534f;
+}
+
+.input-panel {
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    border: 1px solid #d2d2d7;
+    border-radius: 8px;
+    padding: 10px 14px;
+    gap: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0; 
+}
+
+.prompt {
+    color: #0066cc;
+    font-weight: bold;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.input-panel input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #1d1d1f;
+    font-size: 16px;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.input-panel input:focus {
+    outline: none;
+}
+
+/* Estilos para la ventana modal de ayuda */
+.help-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.help-modal-card {
+    background-color: #ffffff;
+    border: 1px solid #d2d2d7;
+    border-radius: 12px;
+    width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+}
+
+.help-modal-header {
+    background-color: #f5f5f7;
+    padding: 12px 16px;
+    border-bottom: 1px solid #d2d2d7;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    color: #0066cc;
+}
+
+.help-modal-close {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #1d1d1f;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.help-modal-body {
+    padding: 16px;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.help-clickable-item {
+    cursor: pointer;
+    color: #0066cc;
+    transition: background 0.2s, padding 0.2s;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+
+.help-clickable-item:hover {
+    background-color: #f0f0f2;
+    text-decoration: underline;
+}
+
+/* Estilo para fracciones matemáticas en la cinta */
+.math-fraction {
+    display: inline-flex;
+    flex-direction: column;
+    vertical-align: middle;
+    text-align: center;
+    font-size: 0.9em;
+    margin: 0 3px;
+    padding: 0 2px;
+}
+
+.math-num {
+    border-bottom: 1px solid #1d1d1f;
+    padding-bottom: 1px;
+}
+
+.math-den {
+    padding-top: 1px;
+}
+
+/* Estilos para integrales y derivadas tipográficas en la cinta */
+.math-integral {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    gap: 4px;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.math-limits {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.75em;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.math-symbol {
+    font-size: 1.6em;
+    line-height: 1;
+}
+
+.math-sup {
+    margin-bottom: -2px;
+}
+
+.math-sub {
+    margin-top: -2px;
+}
+
+.math-body {
+    margin: 0 2px;
+}
+
+.math-diff {
+    font-style: italic;
+    color: #0066cc;
+    margin-left: 2px;
+}
+
+.math-derivative {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    gap: 2px;
+}
+
+.math-frac-deriv {
+    display: inline-flex;
+    flex-direction: column;
+    text-align: center;
+    font-size: 0.85em;
+    vertical-align: middle;
+}
+
+/* Estilos para límites matemáticos en la cinta */
+.math-limit {
+    display: inline-flex;
+    align-items: baseline;
+    vertical-align: middle;
+    gap: 4px;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.math-lim-text {
+    font-weight: bold;
+    font-size: 0.95em;
+}
+
+.math-lim-sub {
+    font-size: 0.7em;
+    vertical-align: sub;
+    margin-left: -2px;
+    margin-right: 2px;
+}

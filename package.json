@@ -1,0 +1,46 @@
+{
+  "name": "rtcalc",
+  "version": "1.3.1",
+  "description": "Scientific Roller Tape Calculator",
+  "author": "Pablo Niklas <pablo.niklas@gmail.com> (https://github.com/pabloniklas)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.rtcalc.desktop",
+    "productName": "rtcalc",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "src/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    }
+  },
+  "dependencies": {
+    "mathjs": "^13.0.0",
+    "plotly.js-dist-min": "^2.35.0"
+  },
+  "devDependencies": {
+    "electron": "^44.2.0",
+    "electron-builder": "^26.15.3"
+  }
+}

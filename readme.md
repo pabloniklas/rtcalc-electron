@@ -54,7 +54,7 @@
 ### Pasos de instalación
 
 1. **Clonar el repositorio:**
-   ```bash
+```bash
    git clone [https://github.com/pabloniklas/rtcalc-electron.git](https://github.com/pabloniklas/rtcalc-electron.git)
    cd rtcalc-electron
 ```

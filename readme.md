@@ -1,6 +1,3 @@
-Here is the English translation for your `README.md` file:
-
-```markdown
 # RTCalc (Scientific Roller Tape Calculator)
 
 **RTCalc** is a desktop scientific calculator built with Electron, designed for technical and educational environments. It combines the continuous workflow of an **interactive paper tape** with the power of an advanced analytical and numerical mathematical engine.
@@ -104,4 +101,3 @@ The compiled binaries will be generated inside the `dist/` folder.
 Developed by **Pablo Niklas** `<pablo.niklas@gmail.com>`.
 
 MIT License
-

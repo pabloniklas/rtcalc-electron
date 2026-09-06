@@ -104,3 +104,4 @@ The compiled binaries will be generated inside the `dist/` folder.
 Developed by **Pablo Niklas** `<pablo.niklas@gmail.com>`.
 
 MIT License
+

@@ -4,38 +4,42 @@
   "description": "Scientific Roller Tape Calculator",
   "author": "Pablo Niklas <pablo.niklas@gmail.com> (https://github.com/pabloniklas)",
   "main": "main.js",
+  "desktopName": "rtcalc.desktop",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "dist": "electron-builder --linux deb rpm AppImage"
   },
   "build": {
-    "appId": "com.rtcalc.desktop",
-    "productName": "rtcalc",
+    "appId": "com.pabloniklas.rtcalc",
+    "productName": "RTCalc",
     "directories": {
       "output": "dist"
     },
     "files": [
-      "main.js",
       "src/**/*",
-      "node_modules/**/*"
+      "assets/**/*",
+      "main.js",
+      "package.json"
     ],
-    "win": {
-      "target": [
-        "nsis"
-      ],
-      "icon": "assets/icon.ico"
-    },
-    "mac": {
-      "target": [
-        "dmg"
-      ],
-      "icon": "assets/icon.icns"
-    },
     "linux": {
+      "category": "Utility;Education;",
+      "icon": "assets/icon.png",
+      "executableName": "rtcalc",
       "target": [
-        "AppImage"
-      ],
-      "icon": "assets/icon.png"
+        "AppImage",
+        "deb",
+        "rpm"
+      ]
+    },
+    "deb": {
+      "priority": "optional"
+    },
+    "rpm": {
+      "fpm": [
+        "--rpm-os",
+        "linux"
+      ]
     }
   },
   "dependencies": {

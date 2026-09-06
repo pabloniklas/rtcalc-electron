@@ -1,14 +1,13 @@
-const {
-    create,
-    all
-} = require('mathjs');
+const { create, all } = require('mathjs');
 const Plotly = require('plotly.js-dist-min');
 const math = create(all);
+const { t, currentLang } = require('./i18n.js');
 
 const inputField = document.getElementById('calc-input');
 const tapeContainer = document.getElementById('tape-container');
 const helpBtn = document.getElementById('help-btn');
 const clearTapeBtn = document.getElementById('clear-tape-btn');
+const submitBtn = document.getElementById('submit-btn');
 
 let memory = 0;
 let graphCounter = 0;
@@ -18,22 +17,43 @@ let tempInput = '';
 
 const vibrantColors = ['#007aff', '#ff3b30', '#34c759', '#af52de', '#ff9500', '#5ac8fa', '#ff2d55', '#5856d6'];
 
+// Formateo numérico automático basado en el idioma activo
 function formatLocalNumber(value) {
     if (typeof value !== 'number' || isNaN(value)) return value;
     const rounded = Number(value.toFixed(10));
-    return new Intl.NumberFormat('es-AR', {
+    
+    // Asignar el locale correspondiente para la representación decimal/miles
+    const localeMap = {
+        'es': 'es-AR',
+        'en': 'en-US',
+        'fr': 'fr-FR',
+        'it': 'it-IT'
+    };
+    
+    return new Intl.NumberFormat(localeMap[currentLang] || 'es-AR', {
         maximumFractionDigits: 10
     }).format(rounded);
 }
 
-const submitBtn = document.getElementById('submit-btn');
+// Cargar cadenas traducidas en la UI al iniciar
+document.addEventListener('DOMContentLoaded', () => {
+    if (inputField) inputField.placeholder = t('placeholder');
+    if (helpBtn) helpBtn.title = t('btnHelpTitle');
+    if (clearTapeBtn) clearTapeBtn.title = t('btnClearTitle');
+    if (submitBtn) submitBtn.title = t('btnSubmitTitle');
 
-// Función central para procesar y evaluar la entrada
+    // Desvanecer splash modal automáticamente
+    const splashModal = document.getElementById('about-splash');
+    if (splashModal) {
+        setTimeout(() => splashModal.remove(), 3500);
+    }
+});
+
+// Procesamiento de comandos y entrada
 function processInput() {
     const rawInput = inputField.value.trim();
     if (!rawInput) return;
 
-    // Interceptar 'man' o 'help' para no enviar a MathJS
     if (rawInput.toLowerCase() === 'man' || rawInput.toLowerCase() === 'help') {
         openHelpModal();
         inputField.value = '';
@@ -49,47 +69,9 @@ function processInput() {
     inputField.focus();
 }
 
-// Evento del botón de submit
 if (submitBtn) {
-    submitBtn.addEventListener('click', () => {
-        processInput();
-    });
+    submitBtn.addEventListener('click', processInput);
 }
-
-// Escuchar Enter en el input de texto
-inputField.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        processInput();
-    } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (history.length === 0) return;
-        if (historyIndex === history.length) tempInput = inputField.value;
-        if (historyIndex > 0) {
-            historyIndex--;
-            inputField.value = history[historyIndex];
-        }
-    } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (history.length === 0) return;
-        if (historyIndex < history.length - 1) {
-            historyIndex++;
-            inputField.value = history[historyIndex];
-        } else {
-            historyIndex = history.length;
-            inputField.value = tempInput;
-        }
-    }
-});
-
-// Ocultar y remover el modal de bienvenida automáticamente al iniciar
-window.addEventListener('DOMContentLoaded', () => {
-    const splashModal = document.getElementById('about-splash');
-    if (splashModal) {
-        setTimeout(() => {
-            splashModal.remove();
-        }, 3500);
-    }
-});
 
 if (clearTapeBtn) {
     clearTapeBtn.addEventListener('click', () => {
@@ -103,30 +85,13 @@ if (clearTapeBtn) {
 }
 
 if (helpBtn) {
-    helpBtn.addEventListener('click', () => {
-        openHelpModal();
-    });
+    helpBtn.addEventListener('click', openHelpModal);
 }
 
-// Unificación del evento Keydown para entrada y navegación de historial
+// Navegación de historial y Enter
 inputField.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-        const rawInput = inputField.value.trim();
-        if (!rawInput) return;
-
-        // Interceptar 'man' o 'help' para no enviar a MathJS
-        if (rawInput.toLowerCase() === 'man' || rawInput.toLowerCase() === 'help') {
-            openHelpModal();
-            inputField.value = '';
-            return;
-        }
-
-        history.push(rawInput);
-        historyIndex = history.length;
-        tempInput = '';
-
-        appendTape(rawInput);
-        inputField.value = '';
+        processInput();
     } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         if (history.length === 0) return;
@@ -152,16 +117,8 @@ function formatResultForTape(resultStr) {
     if (typeof resultStr !== 'string') return resultStr;
 
     const superscripts = {
-        '0': '⁰',
-        '1': '¹',
-        '2': '²',
-        '3': '³',
-        '4': '⁴',
-        '5': '⁵',
-        '6': '⁶',
-        '7': '⁷',
-        '8': '⁸',
-        '9': '⁹'
+        '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+        '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹'
     };
 
     return resultStr
@@ -170,8 +127,6 @@ function formatResultForTape(resultStr) {
         })
         .replace(/\*/g, ' · ');
 }
-
-
 
 const customScope = {
     ln: function (x) {
@@ -184,9 +139,7 @@ const customScope = {
         const node = math.parse(expr);
         const compiled = node.compile();
         const h = 1e-7;
-        const evalAt = (val) => compiled.evaluate({
-            [variable]: val
-        });
+        const evalAt = (val) => compiled.evaluate({ [variable]: val });
         return (evalAt(x0 + h) - evalAt(x0 - h)) / (2 * h);
     },
     integral: function (expr, variable, a, b, n = 1000) {
@@ -196,9 +149,7 @@ const customScope = {
         let sum = 0;
         for (let i = 0; i <= n; i++) {
             const x = a + i * h;
-            const val = compiled.evaluate({
-                [variable]: x
-            });
+            const val = compiled.evaluate({ [variable]: x });
             if (i === 0 || i === n) sum += val;
             else if (i % 2 === 1) sum += 4 * val;
             else sum += 2 * val;
@@ -279,16 +230,14 @@ const customScope = {
 
             return math.simplify(exprStr).toString();
         } catch (e) {
-            return "No se pudo factorizar";
+            return t('errUnresolved');
         }
     },
     limit: function (expr, variable, target) {
         const node = math.parse(expr);
         const compiled = node.compile();
         const h = 1e-7;
-        const evalAt = (val) => compiled.evaluate({
-            [variable]: val
-        });
+        const evalAt = (val) => compiled.evaluate({ [variable]: val });
 
         const valLeft = evalAt(target - h);
         const valRight = evalAt(target + h);
@@ -314,7 +263,7 @@ const customScope = {
     },
     factors: function (n) {
         let num = Math.abs(parseInt(n));
-        if (isNaN(num) || num < 2) return "Ingresá un entero mayor a 1";
+        if (isNaN(num) || num < 2) return t('errEnterPrime');
 
         const factors = {};
         let d = 2;
@@ -337,27 +286,19 @@ const customScope = {
             .map(([prime, exp]) => exp > 1 ? `${prime}^${exp}` : `${prime}`)
             .join(' * ');
     },
-    // Congruencia en módulo: Evalúa si a ≡ b (mod m)
     congruent: function (a, b, m) {
-        if (m === 0) return "El módulo m no puede ser 0";
+        if (m === 0) return t('errDivZero');
         const modA = math.mod(a, m);
         const modB = math.mod(b, m);
-
-        // Manejo de residuos equivalentes en Math.js
         const isEquivalent = Math.abs(modA - modB) < 1e-9;
 
-        return isEquivalent ?
-            `true (${a} ≡ ${b} mod ${m})` :
-            `false (${a} ≢ ${b} mod ${m})`;
+        return isEquivalent ? `true (${a} ≡ ${b} mod ${m})` : `false (${a} ≢ ${b} mod ${m})`;
     },
-    // Tabla básica de Transformadas de Laplace
     laplace: function (expr) {
         let e = expr.replace(/\s+/g, '').toLowerCase();
 
-        // 1. Constante k -> k/s
         if (!isNaN(e)) return `${e}/s`;
 
-        // 2. t^n -> n! / s^(n+1)
         const tPowMatch = e.match(/^t\^(\d+)$/);
         if (tPowMatch) {
             const n = parseInt(tPowMatch[1]);
@@ -366,14 +307,12 @@ const customScope = {
         }
         if (e === 't') return '1 / s^2';
 
-        // 3. e^(a*t) -> 1 / (s - a)
         const expMatch = e.match(/^exp\(([+-]?\d*)\*?t\)$/) || e.match(/^e\^\(([+-]?\d*)\*?t\)$/);
         if (expMatch) {
             let a = expMatch[1] === '' || expMatch[1] === '+' ? 1 : (expMatch[1] === '-' ? -1 : parseFloat(expMatch[1]));
             return a > 0 ? `1 / (s - ${a})` : `1 / (s + ${Math.abs(a)})`;
         }
 
-        // 4. sin(w*t) -> w / (s^2 + w^2) y cos(w*t) -> s / (s^2 + w^2)
         const sinMatch = e.match(/^sin\(([+-]?\d*)\*?t\)$/);
         if (sinMatch) {
             let w = sinMatch[1] === '' || sinMatch[1] === '+' ? 1 : parseFloat(sinMatch[1]);
@@ -386,25 +325,17 @@ const customScope = {
             return `s / (s^2 + ${w * w})`;
         }
 
-        return "Transformada no soportada en la tabla básica";
+        return t('errUnresolved');
     },
-
-    // Coeficientes y N-ésimo armónico de Serie de Fourier
     fourierTerm: function (expr, n, L = Math.PI) {
-        // Devuelve la expresión del n-ésimo término armónico
         return `a_${n}*cos(${n}*x) + b_${n}*sin(${n}*x)`;
     },
-    // Análisis y reconstrucción por Serie de Fourier en [-π, π]
     fourier: function (expr, N = 3) {
         const L = Math.PI;
-
-        // 1. Coeficiente a0
         const a0 = (1 / L) * customScope.integral(expr, 'x', -L, L);
 
         let sumTerms = [`${(a0 / 2).toFixed(4)}`];
-        let harmonicTraces = [expr]; // Incluimos la función original como primera traza
 
-        // 2. Calcular coeficientes an y bn para cada armónico hasta N
         for (let n = 1; n <= N; n++) {
             const an = (1 / L) * customScope.integral(`(${expr}) * cos(${n}*x)`, 'x', -L, L);
             const bn = (1 / L) * customScope.integral(`(${expr}) * sin(${n}*x)`, 'x', -L, L);
@@ -416,11 +347,7 @@ const customScope = {
             if (termB) sumTerms.push(bn >= 0 ? `+ ${termB}` : `- ${termB.replace('-', '')}`);
         }
 
-        // Expresión de la suma reconstruida
         const reconstructedExpr = sumTerms.join(' ');
-
-        // Devolvemos la función para que el motor de renderizado trace
-        // la función original y la reconstrucción armónica juntas
         return `f(x) = ${expr}, ${reconstructedExpr}`;
     },
     solveQuad: function (a, b, c) {
@@ -431,7 +358,7 @@ const customScope = {
             return [`x₁ = ${formatLocalNumber(x1)}`, `x₂ = ${formatLocalNumber(x2)}`];
         } else if (discriminant === 0) {
             const x = -b / (2 * a);
-            return [`x = ${formatLocalNumber(x)} (raíz doble)`];
+            return [`x = ${formatLocalNumber(x)}`];
         } else {
             const real = formatLocalNumber(-b / (2 * a));
             const imag = formatLocalNumber(Math.sqrt(-discriminant) / (2 * a));
@@ -449,7 +376,7 @@ const customScope = {
 
         const [x0_base, y0_base, gcd] = extendedGCD(a, b);
         if (c % gcd !== 0) {
-            return "No tiene solución entera (gcd no divide a c)";
+            return t('errNoDiophantine');
         }
 
         const factor = c / gcd;
@@ -496,76 +423,31 @@ function formatExpressionForTape(expr) {
         return `<span class="math-func-op">${func}</span>(${formattedMat})`;
     });
 
-    // Formatear Laplace: laplace('expr') -> L{expr}
     formatted = formatted.replace(/laplace\s*\(\s*['"]([^'"]+)['"]\s*\)/gi, (match, body) => {
         return `<span class="math-func-op">ℒ</span>{<span class="math-body">${body}</span>}`;
     });
 
     formatted = formatted.replace(/integral\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi, (match, body, v, a, b) => {
-        const superscripts = {
-            '0': '⁰',
-            '1': '¹',
-            '2': '²',
-            '3': '³',
-            '4': '⁴',
-            '5': '⁵',
-            '6': '⁶',
-            '7': '⁷',
-            '8': '⁸',
-            '9': '⁹'
-        };
+        const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
         const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`);
         return `<span class="math-integral"><span class="math-limits"><span class="math-sup">${b}</span><span class="math-symbol">∫</span><span class="math-sub">${a}</span></span><span class="math-body">${bodyClean}</span><span class="math-diff">d${v}</span></span>`;
     });
 
     formatted = formatted.replace(/derivative\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)/gi, (match, body, v) => {
-        const superscripts = {
-            '0': '⁰',
-            '1': '¹',
-            '2': '²',
-            '3': '³',
-            '4': '⁴',
-            '5': '⁵',
-            '6': '⁶',
-            '7': '⁷',
-            '8': '⁸',
-            '9': '⁹'
-        };
+        const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
         const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`);
         return `<span class="math-derivative"><span class="math-frac-deriv"><span class="math-num">d</span><span class="math-den">d${v}</span></span><span class="math-bracket-custom">[${bodyClean}]</span></span>`;
     });
 
     formatted = formatted.replace(/limit\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*([^)]+)\s*\)/gi, (match, body, v, target) => {
-        const superscripts = {
-            '0': '⁰',
-            '1': '¹',
-            '2': '²',
-            '3': '³',
-            '4': '⁴',
-            '5': '⁵',
-            '6': '⁶',
-            '7': '⁷',
-            '8': '⁸',
-            '9': '⁹'
-        };
+        const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
         const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`);
         return `<span class="math-limit"><span class="math-lim-text">lim</span><span class="math-lim-sub">${v}→${target}</span><span class="math-body">${bodyClean}</span></span>`;
     });
 
     formatted = formatted
         .replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (match, base, exp) => {
-            const superscripts = {
-                '0': '⁰',
-                '1': '¹',
-                '2': '²',
-                '3': '³',
-                '4': '⁴',
-                '5': '⁵',
-                '6': '⁶',
-                '7': '⁷',
-                '8': '⁸',
-                '9': '⁹'
-            };
+            const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
             return `${base}${exp.split('').map(digit => superscripts[digit] || digit).join('')}`;
         })
         .replace(/\*/g, ' · ');
@@ -574,12 +456,10 @@ function formatExpressionForTape(expr) {
         return `<span class="math-fraction"><span class="math-num">${num}</span><span class="math-den">${den}</span></span>`;
     });
 
-    // Formatear Fourier: fourier('expr', N)
     formatted = formatted.replace(/fourier\s*\(\s*['"]([^'"]+)['"]\s*,\s*(\d+)\s*\)/gi, (match, body, n) => {
         return `<span class="math-func-op">Fourier</span>(<span class="math-body">${body}</span>, N=${n})`;
     });
 
-    // Formatear congruencia modular: congruent(a, b, m) -> a ≡ b (mod m)
     formatted = formatted.replace(/congruent\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi, (match, a, b, m) => {
         return `<span class="math-func-op">${a.trim()}</span> ≡ <span class="math-func-op">${b.trim()}</span> (mod ${m.trim()})`;
     });
@@ -589,18 +469,7 @@ function formatExpressionForTape(expr) {
     });
 
     formatted = formatted.replace(/factor\s*\(\s*['"]([^'"]+)['"]\s*\)/gi, (match, body) => {
-        const superscripts = {
-            '0': '⁰',
-            '1': '¹',
-            '2': '²',
-            '3': '³',
-            '4': '⁴',
-            '5': '⁵',
-            '6': '⁶',
-            '7': '⁷',
-            '8': '⁸',
-            '9': '⁹'
-        };
+        const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
         const bodyClean = body.replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (m, base, exp) => `${base}${exp.split('').map(d => superscripts[d] || d).join('')}`);
         return `<span class="math-factor-op">factor</span>(${bodyClean})`;
     });
@@ -629,17 +498,15 @@ function appendTape(expr) {
     let graphDataToRender = null;
     const funcMatch = expr.match(/^f\s*\(([^)]+)\)\s*=\s*(.+)$/i);
 
-    // Interceptar llamadas a Fourier para renderizar el gráfico superpuesto
     const fourierMatch = expr.match(/^fourier\s*\(\s*['"]([^'"]+)['"]\s*,\s*(\d+)\s*\)/i);
     if (fourierMatch) {
         const body = fourierMatch[1];
         const nTerms = parseInt(fourierMatch[2]);
 
-        // Evaluamos fourier para obtener las curvas a graficar
         const plotCmd = customScope.fourier(body, nTerms);
         const varsAndBody = plotCmd.match(/^f\s*\(([^)]+)\)\s*=\s*(.+)$/i);
 
-        resultSpan.textContent = `= Serie de Fourier (N=${nTerms})`;
+        resultSpan.textContent = `= ${t('fourierTitle')} (N=${nTerms})`;
         rightContainer.appendChild(resultSpan);
         headerDiv.appendChild(exprSpan);
         headerDiv.appendChild(rightContainer);
@@ -661,11 +528,8 @@ function appendTape(expr) {
             headerDiv.appendChild(rightContainer);
             lineDiv.appendChild(headerDiv);
 
-            graphDataToRender = {
-                vars,
-                body
-            };
-        } else {
+            graphDataToRender = { vars, body };
+        } else if (!fourierMatch) {
             const hasFractions = /\d+\s*\/\s*\d+/.test(expr);
             let evaluated;
 
@@ -686,7 +550,7 @@ function appendTape(expr) {
             let resultVal = (typeof evaluated === 'object' && evaluated?.entries) ?
                 evaluated.entries[evaluated.entries.length - 1] : evaluated;
 
-            if (typeof resultVal === 'function') throw new Error("Expresión incompleta");
+            if (typeof resultVal === 'function') throw new Error(t('errIncomplete'));
 
             if (resultVal && typeof resultVal.toArray === 'function') {
                 resultVal = resultVal.toArray();
@@ -738,26 +602,26 @@ function appendTape(expr) {
     tapeContainer.scrollTop = tapeContainer.scrollHeight;
 }
 
-// Diccionario de documentación detallada para el manual (Segunda etapa)
+// Diccionario de documentación para la etapa 2 traducido dinámicamente
 const HELP_DOCS = {
     'arithmetic': {
         title: 'Aritmética Exacta',
         syntax: 'a / b + c / d',
-        description: 'RTCalc procesa operaciones fraccionarias manteniendo precisión matemática mediante notación de fracción vertical en lugar de redondeos decimales preliminares.',
+        description: 'RTCalc procesa operaciones fraccionarias manteniendo precisión matemática mediante notación de fracción vertical.',
         example: '4/5 + 3/4',
         graphType: null
     },
     'factor': {
         title: 'Factorización Algebraica (factor)',
         syntax: "factor('expresión')",
-        description: 'Factoriza polinomios detectando patrones de factor común, factor común por grupos, diferencia de cuadrados y trinomios cuadrados perfectos.',
+        description: 'Factoriza polinomios detectando patrones de factor común, grupos, diferencia de cuadrados y trinomios.',
         example: "factor('x^2 - 9')",
         graphType: null
     },
     'factors': {
         title: 'Descomposición en Factores Primos (factors)',
         syntax: 'factors(entero)',
-        description: 'Descompone un número entero mayor a 1 en sus factores primos expresados con sus respectivas potencias.',
+        description: 'Descompone un número entero mayor a 1 en sus factores primos expresados con sus potencias.',
         example: 'factors(360)',
         graphType: null
     },
@@ -771,42 +635,42 @@ const HELP_DOCS = {
     'solveLinear': {
         title: 'Ecuaciones Lineales (solveLinear)',
         syntax: 'solveLinear(a, b, c)',
-        description: 'Resuelve la ecuación de primer grado de la forma ax + b = c despejando la incógnita x.',
+        description: 'Resuelve la ecuación de primer grado de la forma ax + b = c despejando x.',
         example: 'solveLinear(2, 4, 10)',
         graphType: null
     },
     'solveQuad': {
         title: 'Ecuaciones Cuadráticas (solveQuad)',
         syntax: 'solveQuad(a, b, c)',
-        description: 'Obtiene las raíces de la ecuación cuadrática ax² + bx + c = 0 mediante la fórmula de Bhaskara, admitiendo raíces reales o complejas.',
+        description: 'Obtiene las raíces de la ecuación ax² + bx + c = 0 mediante la fórmula de Bhaskara (raíces reales o complejas).',
         example: 'solveQuad(1, -5, 6)',
         graphType: null
     },
     'diophantine': {
         title: 'Ecuaciones Diofánticas (diophantine)',
         syntax: 'diophantine(a, b, c)',
-        description: 'Resuelve ecuaciones lineales diofánticas ax + by = c obteniendo la solución paramétrica en números enteros mediante el algoritmo extendido de Euclides.',
+        description: 'Resuelve ecuaciones ax + by = c obteniendo la solución paramétrica entera mediante Euclides extendido.',
         example: 'diophantine(35, 15, 50)',
         graphType: null
     },
     'laplace': {
         title: 'Transformada de Laplace (laplace)',
         syntax: "laplace('f(t)')",
-        description: 'Obtiene la transformada analítica ℒ{f(t)} = F(s) utilizando la tabla fundamental de transformadas (potencias, exponenciales, senos y cosenos).',
+        description: 'Obtiene la transformada analítica ℒ{f(t)} = F(s) utilizando la tabla fundamental de transformadas.',
         example: "laplace('t^2')",
         graphType: null
     },
     'congruent': {
         title: 'Congruencia Modular (congruent)',
         syntax: 'congruent(a, b, m)',
-        description: 'Evalúa la relación comparativa a ≡ b (mod m). Retorna verdadero si a y b dejan el mismo resto al dividirse por m.',
+        description: 'Evalúa la relación a ≡ b (mod m). Retorna verdadero si a y b dejan el mismo resto al dividirse por m.',
         example: 'congruent(17, 5, 12)',
         graphType: null
     },
     'derivative': {
         title: 'Derivada Analítica (derivative)',
         syntax: "derivative('expresión', 'variable')",
-        description: 'Calcula la derivada simbólica/analítica de una función con respecto a la variable especificada.',
+        description: 'Calcula la derivada simbólica/analítica de una función respecto a la variable especificada.',
         example: "derivative('x^3 + 2*x', 'x')",
         graphType: null
     },
@@ -820,36 +684,42 @@ const HELP_DOCS = {
     'limit': {
         title: 'Límites Analíticos (limit)',
         syntax: "limit('expresión', 'variable', punto)",
-        description: 'Evalúa el límite lateral de una función en un punto dado. Detecta si el límite no existe (∄) o tiende a infinito.',
+        description: 'Evalúa el límite lateral de una función en un punto dado. Detecta límites inexistentes (∄) o infinitos.',
         example: "limit('1/x', 'x', 0)",
         graphType: null
     },
     'fourier': {
         title: 'Análisis y Serie de Fourier (fourier)',
         syntax: "fourier('f(x)', N)",
-        description: 'Reconstruye la función f(x) en [-π, π] mediante la suma parcial de sus armónicos hasta el grado N y grafica la función original superpuesta a su aproximación.',
+        description: 'Reconstruye f(x) en [-π, π] mediante la suma parcial de sus armónicos hasta el grado N y grafica el resultado.',
         example: "fourier('x', 5)",
         graphType: '2d',
-        graphData: { vars: ['x'], body: 'x, 2*sin(x) - sin(2*x) + (2/3)*sin(3*x) - (1/2)*sin(4*x) + (2/5)*sin(5*x)' }
+        graphData: {
+            vars: ['x'],
+            body: 'x, 2*sin(x) - sin(2*x) + (2/3)*sin(3*x) - (1/2)*sin(4*x) + (2/5)*sin(5*x)'
+        }
     },
     'matrices': {
         title: 'Álgebra Matricial (inv, det)',
         syntax: 'inv(matriz) / det(matriz)',
-        description: 'Resuelve operaciones con matrices utilizando corchetes anidados [[a,b],[c,d]] y las renderiza en la cinta con corchetes de notación algebraica.',
+        description: 'Resuelve operaciones matriciales utilizando corchetes anidados [[a,b],[c,d]].',
         example: 'inv([[4, 7], [2, 6]])',
         graphType: null
     },
     'plots': {
         title: 'Gráficos 2D y 3D f(x)',
         syntax: 'f(x) = ... / f(x, y) = ...',
-        description: 'Trazado automático interactivo de curvas planas o superficies 3D en la cinta de papel con controles Plotly.js.',
+        description: 'Trazado automático interactivo de curvas o superficies 3D en la cinta con Plotly.js.',
         example: 'f(x, y) = x^2 - y^2',
         graphType: '3d',
-        graphData: { vars: ['x', 'y'], body: 'x^2 - y^2' }
+        graphData: {
+            vars: ['x', 'y'],
+            body: 'x^2 - y^2'
+        }
     }
 };
 
-// ETAPA 1: Modal Principal (Tabla resumen)
+// ETAPA 1: Modal Principal Traducido
 function openHelpModal() {
     const existingModal = document.getElementById('man-help-modal');
     if (existingModal) existingModal.remove();
@@ -861,30 +731,30 @@ function openHelpModal() {
     modalOverlay.innerHTML = `
         <div class="help-modal-content">
             <div class="help-modal-header">
-                <h2>Manual de Usuario (man)</h2>
+                <h2>${t('manTitle')}</h2>
                 <button class="help-close-btn" id="close-help-btn">&times;</button>
             </div>
             <div class="help-modal-body">
                 <table class="help-table">
                     <thead>
-                        <tr><th>Categoría</th><th>Comando / Sintaxis</th><th>Detalles</th></tr>
+                        <tr><th>${t('tableCategory')}</th><th>${t('tableSyntax')}</th><th>${t('tableDetails')}</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td><b>Aritmética</b></td><td><span class="help-clickable-item" data-cmd="4/5 + 3/4">4/5 + 3/4</span></td><td><button class="help-doc-btn" data-key="arithmetic">📖 Ver más</button></td></tr>
-                        <tr><td><b>Factoreo</b></td><td><span class="help-clickable-item" data-cmd="factor('x^2 - 9')">factor('expr')</span></td><td><button class="help-doc-btn" data-key="factor">📖 Ver más</button></td></tr>
-                        <tr><td><b>Primos</b></td><td><span class="help-clickable-item" data-cmd="factors(360)">factors(n)</span></td><td><button class="help-doc-btn" data-key="factors">📖 Ver más</button></td></tr>
-                        <tr><td><b>MCD / MCM</b></td><td><span class="help-clickable-item" data-cmd="mcd(24, 36, 60)">mcd(...) / mcm(...)</span></td><td><button class="help-doc-btn" data-key="mcd_mcm">📖 Ver más</button></td></tr>
-                        <tr><td><b>Ecuaciones</b></td><td><span class="help-clickable-item" data-cmd="solveLinear(2, 4, 10)">solveLinear(a, b, c)</span></td><td><button class="help-doc-btn" data-key="solveLinear">📖 Ver más</button></td></tr>
-                        <tr><td><b>Transformadas</b></td><td><span class="help-clickable-item" data-cmd="laplace('t^2')">laplace('expr')</span></td><td><button class="help-doc-btn" data-key="laplace">📖 Ver más</button></td></tr>
-                        <tr><td><b>Mat. Discreta</b></td><td><span class="help-clickable-item" data-cmd="congruent(17, 5, 12)">congruent(a, b, m)</span></td><td><button class="help-doc-btn" data-key="congruent">📖 Ver más</button></td></tr>
-                        <tr><td><b>Cuadráticas</b></td><td><span class="help-clickable-item" data-cmd="solveQuad(1, -5, 6)">solveQuad(a, b, c)</span></td><td><button class="help-doc-btn" data-key="solveQuad">📖 Ver más</button></td></tr>
-                        <tr><td><b>Diofánticas</b></td><td><span class="help-clickable-item" data-cmd="diophantine(35, 15, 50)">diophantine(a, b, c)</span></td><td><button class="help-doc-btn" data-key="diophantine">📖 Ver más</button></td></tr>
-                        <tr><td><b>Cálculo</b></td><td><span class="help-clickable-item" data-cmd="derivative('x^3 + 2*x', 'x')">derivative('expr', 'var')</span></td><td><button class="help-doc-btn" data-key="derivative">📖 Ver más</button></td></tr>
-                        <tr><td><b>Integrales</b></td><td><span class="help-clickable-item" data-cmd="integral('x^2', 'x', 0, 3)">integral('expr', 'v', a, b)</span></td><td><button class="help-doc-btn" data-key="integral">📖 Ver más</button></td></tr>
-                        <tr><td><b>Límites</b></td><td><span class="help-clickable-item" data-cmd="limit('1/x', 'x', 0)">limit('expr', 'v', target)</span></td><td><button class="help-doc-btn" data-key="limit">📖 Ver más</button></td></tr>
-                        <tr><td><b>Fourier</b></td><td><span class="help-clickable-item" data-cmd="fourier('x', 5)">fourier('expr', N)</span></td><td><button class="help-doc-btn" data-key="fourier">📖 Ver más</button></td></tr>
-                        <tr><td><b>Matrices</b></td><td><span class="help-clickable-item" data-cmd="inv([[4, 7], [2, 6]])">inv(...) / det(...)</span></td><td><button class="help-doc-btn" data-key="matrices">📖 Ver más</button></td></tr>
-                        <tr><td><b>Gráficos</b></td><td><span class="help-clickable-item" data-cmd="f(x) = x^2 - 4">f(x) = ... / f(x, y) = ...</span></td><td><button class="help-doc-btn" data-key="plots">📖 Ver más</button></td></tr>
+                        <tr><td><b>Aritmética</b></td><td><span class="help-clickable-item" data-cmd="4/5 + 3/4">4/5 + 3/4</span></td><td><button class="help-doc-btn" data-key="arithmetic">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Factoreo</b></td><td><span class="help-clickable-item" data-cmd="factor('x^2 - 9')">factor('expr')</span></td><td><button class="help-doc-btn" data-key="factor">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Primos</b></td><td><span class="help-clickable-item" data-cmd="factors(360)">factors(n)</span></td><td><button class="help-doc-btn" data-key="factors">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>MCD / MCM</b></td><td><span class="help-clickable-item" data-cmd="mcd(24, 36, 60)">mcd(...) / mcm(...)</span></td><td><button class="help-doc-btn" data-key="mcd_mcm">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Ecuaciones</b></td><td><span class="help-clickable-item" data-cmd="solveLinear(2, 4, 10)">solveLinear(a, b, c)</span></td><td><button class="help-doc-btn" data-key="solveLinear">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Transformadas</b></td><td><span class="help-clickable-item" data-cmd="laplace('t^2')">laplace('expr')</span></td><td><button class="help-doc-btn" data-key="laplace">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Mat. Discreta</b></td><td><span class="help-clickable-item" data-cmd="congruent(17, 5, 12)">congruent(a, b, m)</span></td><td><button class="help-doc-btn" data-key="congruent">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Cuadráticas</b></td><td><span class="help-clickable-item" data-cmd="solveQuad(1, -5, 6)">solveQuad(a, b, c)</span></td><td><button class="help-doc-btn" data-key="solveQuad">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Diofánticas</b></td><td><span class="help-clickable-item" data-cmd="diophantine(35, 15, 50)">diophantine(a, b, c)</span></td><td><button class="help-doc-btn" data-key="diophantine">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Cálculo</b></td><td><span class="help-clickable-item" data-cmd="derivative('x^3 + 2*x', 'x')">derivative('expr', 'var')</span></td><td><button class="help-doc-btn" data-key="derivative">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Integrales</b></td><td><span class="help-clickable-item" data-cmd="integral('x^2', 'x', 0, 3)">integral('expr', 'v', a, b)</span></td><td><button class="help-doc-btn" data-key="integral">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Límites</b></td><td><span class="help-clickable-item" data-cmd="limit('1/x', 'x', 0)">limit('expr', 'v', target)</span></td><td><button class="help-doc-btn" data-key="limit">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Fourier</b></td><td><span class="help-clickable-item" data-cmd="fourier('x', 5)">fourier('expr', N)</span></td><td><button class="help-doc-btn" data-key="fourier">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Matrices</b></td><td><span class="help-clickable-item" data-cmd="inv([[4, 7], [2, 6]])">inv(...) / det(...)</span></td><td><button class="help-doc-btn" data-key="matrices">${t('seeMore')}</button></td></tr>
+                        <tr><td><b>Gráficos</b></td><td><span class="help-clickable-item" data-cmd="f(x) = x^2 - 4">f(x) = ... / f(x, y) = ...</span></td><td><button class="help-doc-btn" data-key="plots">${t('seeMore')}</button></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -895,7 +765,6 @@ function openHelpModal() {
 
     document.getElementById('close-help-btn').addEventListener('click', () => modalOverlay.remove());
 
-    // Insertar comando al hacer clic en la sintaxis
     modalOverlay.querySelectorAll('.help-clickable-item').forEach(item => {
         item.addEventListener('click', () => {
             const cmd = item.getAttribute('data-cmd');
@@ -907,7 +776,6 @@ function openHelpModal() {
         });
     });
 
-    // Abrir modal de detalle (Segunda etapa)
     modalOverlay.querySelectorAll('.help-doc-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -917,7 +785,7 @@ function openHelpModal() {
     });
 }
 
-// ETAPA 2: Modal Secundario con detalle y gráfico de previsualización
+// ETAPA 2: Modal Secundario Traducido
 function openCommandDetailModal(key) {
     const doc = HELP_DOCS[key];
     if (!doc) return;
@@ -925,7 +793,7 @@ function openCommandDetailModal(key) {
     const detailOverlay = document.createElement('div');
     detailOverlay.id = 'man-detail-modal';
     detailOverlay.className = 'help-modal-overlay';
-    detailOverlay.style.zIndex = '100000'; // Sobre el modal principal
+    detailOverlay.style.zIndex = '100000';
 
     detailOverlay.innerHTML = `
         <div class="help-modal-content help-detail-content">
@@ -934,12 +802,12 @@ function openCommandDetailModal(key) {
                 <button class="help-close-btn" id="close-detail-btn">&times;</button>
             </div>
             <div class="help-modal-body">
-                <p><b>Sintaxis:</b> <code>${doc.syntax}</code></p>
+                <p><b>${t('syntaxLabel')}</b> <code>${doc.syntax}</code></p>
                 <p>${doc.description}</p>
                 <hr style="border:0; border-top:1px solid #e5e5ea; margin: 12px 0;">
-                <p><b>Ejemplo de uso:</b></p>
-                <div class="help-example-box" id="insert-example-btn" title="Hacé clic para insertar en el campo de entrada">
-                    <code>${doc.example}</code> <span>(Clic para probar)</span>
+                <p><b>${t('exampleLabel')}</b></p>
+                <div class="help-example-box" id="insert-example-btn">
+                    <code>${doc.example}</code> <span>${t('clickToTest')}</span>
                 </div>
                 ${doc.graphType ? '<div id="help-doc-plot" style="width:100%; height:220px; margin-top:12px;"></div>' : ''}
             </div>
@@ -960,7 +828,6 @@ function openCommandDetailModal(key) {
         if (mainModal) mainModal.remove();
     });
 
-    // Renderizado del gráfico en el modal secundario si corresponde
     if (doc.graphType && doc.graphData) {
         setTimeout(() => {
             renderInlineGraph(doc.graphData.vars, doc.graphData.body, 'help-doc-plot');
@@ -989,11 +856,7 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
             const row = [];
             for (let x of xValues) {
                 try {
-                    const val = compiled.evaluate({
-                        x,
-                        y,
-                        ...customScope
-                    });
+                    const val = compiled.evaluate({ x, y, ...customScope });
                     row.push(typeof val === 'number' && !isNaN(val) && isFinite(val) ? val : null);
                 } catch {
                     row.push(null);
@@ -1011,36 +874,18 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
         }];
 
         const layout = {
-            margin: {
-                t: 10,
-                b: 10,
-                l: 10,
-                r: 10
-            },
-            font: {
-                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                size: 11,
-                color: '#1d1d1f'
-            },
+            margin: { t: 10, b: 10, l: 10, r: 10 },
+            font: { family: 'IBM Plex Sans Condensed, sans-serif', size: 11, color: '#1d1d1f' },
             scene: {
-                xaxis: {
-                    title: vars[0] || 'X'
-                },
-                yaxis: {
-                    title: vars[1] || 'Y'
-                },
-                zaxis: {
-                    title: 'Z'
-                }
+                xaxis: { title: vars[0] || 'X' },
+                yaxis: { title: vars[1] || 'Y' },
+                zaxis: { title: 'Z' }
             },
             paper_bgcolor: 'transparent',
             plot_bgcolor: 'transparent'
         };
 
-        Plotly.newPlot(container, data, layout, {
-            responsive: true,
-            displayModeBar: false
-        });
+        Plotly.newPlot(container, data, layout, { responsive: true, displayModeBar: false });
 
     } else {
         const expressions = bodyExpr.split(',').map(e => e.trim());
@@ -1057,10 +902,7 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
                 const compiled = node.compile();
                 const yValues = xValues.map(x => {
                     try {
-                        const y = compiled.evaluate({
-                            [vars[0]]: x,
-                            ...customScope
-                        });
+                        const y = compiled.evaluate({ [vars[0]]: x, ...customScope });
                         return (typeof y === 'number' && !isNaN(y) && isFinite(y)) ? y : null;
                     } catch {
                         return null;
@@ -1073,10 +915,7 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
                     type: 'scatter',
                     mode: 'lines',
                     name: expr,
-                    line: {
-                        color: vibrantColors[index % vibrantColors.length],
-                        width: 3
-                    }
+                    line: { color: vibrantColors[index % vibrantColors.length], width: 3 }
                 });
             } catch (e) {
                 console.error(`Error evaluando ${expr}`, e);
@@ -1084,37 +923,15 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
         });
 
         const layout = {
-            margin: {
-                t: 10,
-                b: 30,
-                l: 30,
-                r: 10
-            },
-            font: {
-                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                size: 11,
-                color: '#1d1d1f'
-            },
-            xaxis: {
-                title: vars[0] || 'x',
-                gridcolor: '#e5e5ea'
-            },
-            yaxis: {
-                title: 'y',
-                gridcolor: '#e5e5ea'
-            },
-            legend: {
-                orientation: 'h',
-                y: 1.2,
-                x: 0
-            },
+            margin: { t: 10, b: 30, l: 30, r: 10 },
+            font: { family: 'IBM Plex Sans Condensed, sans-serif', size: 11, color: '#1d1d1f' },
+            xaxis: { title: vars[0] || 'x', gridcolor: '#e5e5ea' },
+            yaxis: { title: 'y', gridcolor: '#e5e5ea' },
+            legend: { orientation: 'h', y: 1.2, x: 0 },
             paper_bgcolor: 'transparent',
             plot_bgcolor: 'transparent'
         };
 
-        Plotly.newPlot(container, traces, layout, {
-            responsive: true,
-            displayModeBar: false
-        });
+        Plotly.newPlot(container, traces, layout, { responsive: true, displayModeBar: false });
     }
 }

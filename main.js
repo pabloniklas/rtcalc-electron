@@ -8,6 +8,7 @@ const path = require('path');
 
 function createWindow() {
   const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon.png'));
+  const userLocale = app.getLocale();
 
   const mainWindow = new BrowserWindow({
     width: 650,
@@ -15,7 +16,8 @@ function createWindow() {
     icon: icon, // Ruta directa a la raíz
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      additionalArguments: [`--app-locale=${userLocale}`]
     },
     autoHideMenuBar: true,
     backgroundColor: '#f5f5f7'

@@ -2,15 +2,14 @@
 <html lang="es">
     <head>
         <meta charset="UTF-8">
-        <title>RTCalc - Calculadora científica con esteroides</title>
+        <title>RTCalc - Scientific Roller Tape Calculator</title>
         <link rel="stylesheet" href="style.css">
     </head>
     <body>
         <div class="calculator-layout">
-            <div id="tape-container" class="tape-container">
-            </div>
+            <div id="tape-container" class="tape-container"></div>
 
-            <!-- Panel de entrada y controles unificados arriba -->
+            <!-- Panel de entrada y controles unificados -->
             <div class="input-panel">
                 <span class="prompt">&gt;</span>
                 <input type="text" id="calc-input"
@@ -25,17 +24,18 @@
                     title="Limpiar cinta">🗑️</button>
             </div>
         </div>
+
         <!-- Modal de bienvenida / About automático -->
         <div id="about-splash" class="splash-modal">
             <div class="splash-content">
-                <img src="../assets/icon.png" alt="RTCalc Logo"
-                    class="splash-logo">
+                <img src="../assets/icon.png" alt="RTCalc Logo" class="splash-logo">
                 <h2>RTCalc</h2>
                 <p>Calculadora científica con esteroides.</p>
                 <p>By Pablo Niklas &lt;pablo.niklas@gmail.com&gt;</p>
                 <span class="splash-version">v1.0.0</span>
             </div>
         </div>
+
         <script src="renderer.js"></script>
     </body>
 </html>

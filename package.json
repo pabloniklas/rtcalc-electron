@@ -8,7 +8,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "dist": "electron-builder -mwl"
+    "dist": "electron-builder --linux --win"
   },
   "build": {
     "appId": "com.pabloniklas.rtcalc",

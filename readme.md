@@ -1,105 +1,106 @@
+Here is the English translation for your `README.md` file:
+
+```markdown
 # RTCalc (Scientific Roller Tape Calculator)
 
-**RTCalc** es una calculadora científica de escritorio desarrollada en Electron para entornos técnicos y educativos. Combina el flujo continuo de una **cinta de papel interactiva** con la potencia de un motor matemático analítico y numérico avanzado.
+**RTCalc** is a desktop scientific calculator built with Electron, designed for technical and educational environments. It combines the continuous workflow of an **interactive paper tape** with the power of an advanced analytical and numerical mathematical engine.
 
 ---
 
-## 📸 Capturas de Pantalla
+## 📸 Screenshots
 
-| Pantalla de Bienvenida | Cinta de Cálculo & Notación Tipográfica |
+| Welcome Screen | Calculation Tape & Typographic Notation |
 | :---: | :---: |
-| ![RTCalc Splash](screenshots/hero-splash.png) | ![Cinta Matemática](screenshots/math-tape.png) |
+| ![RTCalc Splash](screenshots/hero-splash.png) | ![Math Tape](screenshots/math-tape.png) |
 
-| Análisis de Fourier & Gráficos 2D/3D | Manual Interactivo en 2 Etapas (`man`) |
+| Fourier Analysis & 2D/3D Graphs | Interactive 2-Stage Manual (`man`) |
 | :---: | :---: |
-| ![Gráficos Fourier](screenshots/fourier-plot.png) | ![Manual de Ayuda](screenshots/help-detail.png) |
+| ![Fourier Plots](screenshots/fourier-plot.png) | ![Help Manual](screenshots/help-detail.png) |
 
 ---
 
-## 🚀 Características Principales
+## 🚀 Key Features
 
-* **Cinta de Papel Interactiva:** Visualización de expresiones en formato de libro de texto (fracciones verticales, integrales con límites, derivadas analíticas, límites y matrices tipográficas).
-* **Gráficos 2D y 3D Integrados:** Trazado de curvas planas y superficies tridimensionales mediante Plotly.js directamente sobre la cinta para funciones `f(x)` y `f(x, y)`.
-* **Sistema de Ayuda Interactivo en 2 Etapas (`man`):** 
-  * **Etapa 1:** Resumen de comandos organizados por categorías.
-  * **Etapa 2:** Modal de documentación detallada con descripción teórica, ejemplo ejecutable al hacer clic y previsualización gráfica en vivo.
-* **Tipografía Dual:**
-  * **`IBM Plex Sans Condensed`:** Utilizada en toda la interfaz de usuario (modales, tablas, botones y encabezados).
-  * **`Iosevka Charon Mono`:** Reservada para la cinta de resultados, el prompt y el campo de entrada.
-* **Motor Matemático Extendido (`mathjs` + `customScope`):**
-  * **Aritmética Exacta:** Simplificación y representación de fracciones exactas.
-  * **Álgebra:** Factorización automática (factor común, por grupos, diferencia de cuadrados y trinomios).
-  * **Matemática Discreta:** MCD, MCM, descomposición en factores primos (`factors(n)`) y congruencia modular ($a \equiv b \pmod m$).
-  * **Ecuaciones:** Solución de sistemas lineales ($ax+b=c$), cuadráticos (raíces reales o complejas) y diofánticos ($ax+by=c$).
-  * **Cálculo Infinitesimal:** Derivada analítica, integral definida numérica (regla de Simpson) y límites laterales.
-  * **Transformadas & Series:** Transformada de Laplace ($\mathcal{L}$) y análisis/reconstrucción armónica por Serie de Fourier.
-  * **Álgebra Lineal:** Operaciones matriciales con renderizado de corchetes (determinantes, inversas y transpuestas).
+* **Interactive Paper Tape:** Expression visualization in textbook format (vertical fractions, definite integrals with limits, analytical derivatives, limits, and matrix notation).
+* **Integrated 2D and 3D Plotting:** Real-time plotting of 2D curves and 3D surface plots via Plotly.js directly on the tape for `f(x)` and `f(x, y)` functions.
+* **Interactive 2-Stage Help System (`man`):** 
+  * **Stage 1:** Summary table of commands organized by categories.
+  * **Stage 2:** Detailed documentation modal featuring theoretical background, click-to-run interactive examples, and live plot previews.
+* **Dual Typography System:**
+  * **`IBM Plex Sans Condensed`:** Used across the entire user interface (modals, tables, buttons, and headers).
+  * **`Iosevka Charon Mono`:** Reserved exclusively for the calculation tape, prompt, and input bar.
+* **Extended Mathematical Engine (`mathjs` + `customScope`):**
+  * **Exact Arithmetic:** Automatic handling and simplification of exact fractions.
+  * **Algebra:** Symbolic polynomial factorization (common factor, grouping, difference of squares, and trinomials).
+  * **Discrete Mathematics:** GCD, LCM, prime factor decomposition (`factors(n)`), and modular congruence ($a \equiv b \pmod m$).
+  * **Equations:** Linear ($ax+b=c$), quadratic (real or complex roots), and Diophantine ($ax+by=c$) equation solvers.
+  * **Infinitesimal Calculus:** Analytical derivatives, numerical definite integrals (Simpson's rule), and lateral limits.
+  * **Transforms & Series:** Laplace transform ($\mathcal{L}$) and harmonic analysis/reconstruction using Fourier Series.
+  * **Linear Algebra:** Visual matrix operations with bracket rendering (determinants, inverses, and transposes).
 
 ---
 
-## ⌨️ Comandos y Sintaxis Destacados
+## ⌨️ Highlighted Commands & Syntax
 
-| Categoría | Comando / Ejemplo | Descripción |
+| Category | Command / Example | Description |
 | :--- | :--- | :--- |
-| **Aritmética** | `4/5 + 3/4` | Operaciones con fracciones exactas ($\frac{31}{20}$) |
-| **Factoreo** | `factor('x^2 - 9')` | Factorización simbólica de expresiones |
-| **Primos** | `factors(360)` | Descomposición en producto de potencias de primos |
-| **Congruencia** | `congruent(17, 5, 12)` | Evalúa la relación comparativa $a \equiv b \pmod m$ |
-| **Cuadráticas** | `solveQuad(1, -5, 6)` | Raíces mediante la fórmula de Bhaskara |
-| **Diofánticas** | `diophantine(35, 15, 50)` | Solución paramétrica entera $ax + by = c$ |
-| **Cálculo** | `integral('x^2', 'x', 0, 3)` | Integral definida por método de Simpson |
-| **Laplace** | `laplace('t^2')` | Transformada analítica $\mathcal{L}\{f(t)\}$ |
-| **Fourier** | `fourier('x', 5)` | Reconstrucción y gráfico de los primeros $N$ armónicos |
-| **Gráficos** | `f(x, y) = x^2 - y^2` | Generación de gráfico 3D en la cinta |
+| **Arithmetic** | `4/5 + 3/4` | Operations with exact fractions ($\frac{31}{20}$) |
+| **Factoring** | `factor('x^2 - 9')` | Symbolic expression factorization |
+| **Primes** | `factors(360)` | Prime factor power decomposition |
+| **Congruence** | `congruent(17, 5, 12)` | Evaluates $a \equiv b \pmod m$ relationship |
+| **Quadratics** | `solveQuad(1, -5, 6)` | Quadratic roots using the quadratic formula |
+| **Diophantine** | `diophantine(35, 15, 50)` | Integer parametric solution for $ax + by = c$ |
+| **Calculus** | `integral('x^2', 'x', 0, 3)` | Definite integration via Simpson's rule |
+| **Laplace** | `laplace('t^2')` | Analytical Laplace transform $\mathcal{L}\{f(t)\}$ |
+| **Fourier** | `fourier('x', 5)` | Fourier Series expansion and plot up to $N$ harmonics |
+| **Plotting** | `f(x, y) = x^2 - y^2` | Interactive 3D plot rendering on tape |
 
 ---
 
-## 🛠️ Instalación y Desarrollo
+## 🛠️ Installation & Development
 
-### Requisitos previos
+### Prerequisites
 * Node.js (v16+)
 * npm
 
-### Pasos de instalación
+### Installation steps
 
-1. **Clonar el repositorio:**
+1. **Clone the repository:**
 ```bash
    git clone https://github.com/pabloniklas/rtcalc-electron.git
    cd rtcalc-electron
 
 ```
 
-2. **Instalar dependencias:**
+2. **Install dependencies:**
 ```bash
 npm install
 
 ```
 
-
-3. **Ejecutar en modo desarrollo:**
+3. **Run in development mode:**
 ```bash
 npm start
 
 ```
 
-
-
 ---
 
-## 📦 Empaquetado (Build)
+## 📦 Packaging (Build)
 
-Para generar los paquetes ejecutables de distribución para Linux (`.AppImage`, `.deb`) o Windows (`.exe`):
+To generate standalone distribution packages for Linux (`.AppImage`, `.deb`, `.rpm`) or Windows (`.exe`):
 
 ```bash
 npm run dist
 
 ```
 
-Los ejecutables compilados se generarán dentro del directorio `dist/`.
+The compiled binaries will be generated inside the `dist/` folder.
 
 ---
 
-## 📄 Licencia
+## 📄 License
 
-Desarrollado por **Pablo Niklas** `<pablo.niklas@gmail.com>`.
-MIT
+Developed by **Pablo Niklas** `<pablo.niklas@gmail.com>`.
+
+MIT License

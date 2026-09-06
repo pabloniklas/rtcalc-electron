@@ -8,7 +8,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "dist": "electron-builder --linux deb rpm AppImage"
+    "dist": "electron-builder -mwl"
   },
   "build": {
     "appId": "com.pabloniklas.rtcalc",
@@ -39,6 +39,21 @@
       "fpm": [
         "--rpm-os",
         "linux"
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.education",
+      "icon": "assets/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        "nsis",
+        "portable"
       ]
     }
   },

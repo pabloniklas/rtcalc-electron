@@ -3,31 +3,39 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*' # Se activa al subir tags como v1.3.1, v1.4.0, etc.
+      - 'v*'
 
 permissions:
-  contents: write # Otorga permisos para crear el Release en GitHub
+  contents: write
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/checkout@v4
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Install RPM packaging dependencies
-        run: sudo apt-get update && sudo apt-get install -y rpm
+      - name: Install Linux dependencies (RPM)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
 
       - name: Build and Publish Electron App
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run dist -- --publish always
+        run: npx electron-builder --publish always

@@ -12,7 +12,7 @@ const translations = {
         syntaxLabel: "Sintaxis:",
         exampleLabel: "Ejemplo de uso:",
         clickToTest: "(Clic para probar)",
-        errUnresolved: "No se pudo factorizar la expresión",
+        errUnresolved: "No se pudo calcular la expresión simbólica",
         errIncomplete: "Expresión incompleta",
         errDivZero: "El módulo m no puede ser 0",
         errNoDiophantine: "No tiene solución entera (gcd no divide a c)",
@@ -32,7 +32,7 @@ const translations = {
         syntaxLabel: "Syntax:",
         exampleLabel: "Usage example:",
         clickToTest: "(Click to test)",
-        errUnresolved: "Could not factor expression",
+        errUnresolved: "Could not calculate symbolic expression",
         errIncomplete: "Incomplete expression",
         errDivZero: "Module m cannot be 0",
         errNoDiophantine: "No integer solution (gcd does not divide c)",
@@ -52,7 +52,7 @@ const translations = {
         syntaxLabel: "Syntaxe :",
         exampleLabel: "Exemple d'utilisation :",
         clickToTest: "(Cliquer pour tester)",
-        errUnresolved: "Impossible de factoriser l'expression",
+        errUnresolved: "Impossible de calculer l'expression symbolique",
         errIncomplete: "Expression incomplète",
         errDivZero: "Le module m ne peut pas être 0",
         errNoDiophantine: "Pas de solution entière (pgcd ne divise pas c)",
@@ -72,7 +72,7 @@ const translations = {
         syntaxLabel: "Sintassi:",
         exampleLabel: "Esempio d'uso:",
         clickToTest: "(Clicca per provare)",
-        errUnresolved: "Impossibile fattorizzare l'espressione",
+        errUnresolved: "Impossibile calcolare l'espressione simbolica",
         errIncomplete: "Espressione incompleta",
         errDivZero: "Il modulo m non può essere 0",
         errNoDiophantine: "Nessuna soluzione intera (MCD non divide c)",
@@ -81,7 +81,6 @@ const translations = {
     }
 };
 
-// Detección e identificación del idioma según el OS
 function getSystemLocale() {
     const localeArg = window.process && window.process.argv 
         ? window.process.argv.find(arg => arg.startsWith('--app-locale=')) 
@@ -89,13 +88,13 @@ function getSystemLocale() {
 
     if (localeArg) {
         const fullLocale = localeArg.split('=')[1].toLowerCase();
-        const langCode = fullLocale.split('-')[0]; // Extrae 'es', 'en', 'fr', 'it'
+        const langCode = fullLocale.split('-')[0]; 
         
         if (translations[langCode]) {
             return langCode;
         }
     }
-    return 'es'; // Idioma por defecto en caso de no coincidir
+    return 'es'; 
 }
 
 const currentLang = getSystemLocale();

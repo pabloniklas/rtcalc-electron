@@ -58,6 +58,7 @@
     }
   },
   "dependencies": {
+    "algebrite": "^1.4.0",
     "mathjs": "^13.0.0",
     "plotly.js-dist-min": "^2.35.0"
   },

@@ -1,8 +1,14 @@
-const { create, all } = require('mathjs');
+const {
+    create,
+    all
+} = require('mathjs');
 const Plotly = require('plotly.js-dist-min');
 const Algebrite = require('algebrite'); // Motor CAS Integrado
 const math = create(all);
-const { t, currentLang } = require('./i18n.js');
+const {
+    t,
+    currentLang
+} = require('./i18n.js');
 
 const inputField = document.getElementById('calc-input');
 const tapeContainer = document.getElementById('tape-container');
@@ -10,7 +16,9 @@ const helpBtn = document.getElementById('help-btn');
 const clearTapeBtn = document.getElementById('clear-tape-btn');
 const submitBtn = document.getElementById('submit-btn');
 
-const { version } = require('../package.json');
+const {
+    version
+} = require('../package.json');
 
 let memory = 0;
 let graphCounter = 0;
@@ -23,20 +31,21 @@ const vibrantColors = ['#007aff', '#ff3b30', '#34c759', '#af52de', '#ff9500', '#
 function formatLocalNumber(value) {
     if (typeof value !== 'number' || isNaN(value)) return value;
     const rounded = Number(value.toFixed(10));
-    
+
     const localeMap = {
         'es': 'es-AR',
         'en': 'en-US',
         'fr': 'fr-FR',
         'it': 'it-IT'
     };
-    
+
     return new Intl.NumberFormat(localeMap[currentLang] || 'es-AR', {
         maximumFractionDigits: 10
     }).format(rounded);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Ejecución directa (sin el listener de DOMContentLoaded)
     if (inputField) inputField.placeholder = t('placeholder');
     if (helpBtn) helpBtn.title = t('btnHelpTitle');
     if (clearTapeBtn) clearTapeBtn.title = t('btnClearTitle');
@@ -114,22 +123,17 @@ inputField.addEventListener('keydown', (e) => {
 
 function formatResultForTape(resultStr) {
     if (typeof resultStr !== 'string') return resultStr;
-    
+
     return resultStr
-        .replace(/\s*\^\s*/g, '^') // Elimina espacios alrededor del exponente
-        
-        // 1. Captura exponentes entre paréntesis ej: x^(n+1) -> x<sup>n+1</sup>
-        .replace(/([a-zA-Z0-9\)]+)\^\(([^)]+)\)/g, '$1<sup style="font-size: 0.75em;">$2</sup>')
-        
-        // 2. Captura exponentes simples alfanuméricos ej: x^n, e^x, 2^3 -> x<sup>n</sup>
-        .replace(/([a-zA-Z0-9\)]+)\^([a-zA-Z0-9]+)/g, '$1<sup style="font-size: 0.75em;">$2</sup>')
-        
-        // 3. Captura subíndices simples (muy útil para Fourier) ej: a_n, x_1 -> a<sub>n</sub>
-        .replace(/([a-zA-Z0-9]+)_([a-zA-Z0-9]+)/g, '$1<sub style="font-size: 0.75em;">$2</sub>')
-        
-        // 4. Fracciones verticales
+        .replace(/\s*\^\s*/g, '^')
+        // 1. Fracciones verticales (antes de inyectar HTML para evitar conflictos con cierres como </span>)
         .replace(/(\b\w+|\d+)\s*\/\s*(\b\w+|\d+\b)/g, (match, num, den) => `<span class="math-fraction"><span class="math-num">${num}</span><span class="math-den">${den}</span></span>`)
-        
+        // 2. Superíndices con paréntesis: x^(n+1) -> x^{n+1}
+        .replace(/([a-zA-Z0-9\)]+)\^\(([^)]+)\)/g, '$1<sup style="font-size: 0.75em;">$2</sup>')
+        // 3. Superíndices simples: x^n, e^x, 2^3
+        .replace(/([a-zA-Z0-9\)]+)\^([a-zA-Z0-9]+)/g, '$1<sup style="font-size: 0.75em;">$2</sup>')
+        // 4. Subíndices: a_n, x_1
+        .replace(/([a-zA-Z0-9]+)_([a-zA-Z0-9]+)/g, '$1<sub style="font-size: 0.75em;">$2</sub>')
         // 5. Multiplicaciones
         .replace(/\*/g, ' · ');
 }
@@ -138,7 +142,7 @@ function formatResultForTape(resultStr) {
 const customScope = {
     ln: (x) => math.log(x),
     derivative: (expr, variable) => math.derivative(expr, variable).toString(),
-    
+
     // Integral Indefinida Simbólica (CAS)
     integrate: function (expr, variable = 'x') {
         try {
@@ -148,7 +152,7 @@ const customScope = {
             throw new Error(t('errUnresolved'));
         }
     },
-    
+
     // Integral Definida Numérica (Mantiene Simpson)
     integral: function (expr, variable, a, b, n = 1000) {
         const node = math.parse(expr);
@@ -157,14 +161,16 @@ const customScope = {
         let sum = 0;
         for (let i = 0; i <= n; i++) {
             const x = a + i * h;
-            const val = compiled.evaluate({ [variable]: x });
+            const val = compiled.evaluate({
+                [variable]: x
+            });
             if (i === 0 || i === n) sum += val;
             else if (i % 2 === 1) sum += 4 * val;
             else sum += 2 * val;
         }
         return (h / 3) * sum;
     },
-    
+
     // Factorización Simbólica (CAS)
     factor: function (exprOrNode) {
         try {
@@ -190,7 +196,9 @@ const customScope = {
         const node = math.parse(expr);
         const compiled = node.compile();
         const h = 1e-7;
-        const evalAt = (val) => compiled.evaluate({ [variable]: val });
+        const evalAt = (val) => compiled.evaluate({
+            [variable]: val
+        });
         const valLeft = evalAt(target - h);
         const valRight = evalAt(target + h);
 
@@ -310,7 +318,18 @@ function formatMatrixAsHTML(mat) {
 
 function formatExpressionForTape(expr) {
     let formatted = expr;
-    const superscripts = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+    const superscripts = {
+        '0': '⁰',
+        '1': '¹',
+        '2': '²',
+        '3': '³',
+        '4': '⁴',
+        '5': '⁵',
+        '6': '⁶',
+        '7': '⁷',
+        '8': '⁸',
+        '9': '⁹'
+    };
 
     const cleanMatrixInString = (matStr) => {
         try {
@@ -322,11 +341,11 @@ function formatExpressionForTape(expr) {
         return matStr;
     };
 
-    formatted = formatted.replace(/(inv|det|transpose|eigenvalues)\s*\(\s*(\[[\s\S]*?\])\s*\)/gi, (match, func, matContent) => 
+    formatted = formatted.replace(/(inv|det|transpose|eigenvalues)\s*\(\s*(\[[\s\S]*?\])\s*\)/gi, (match, func, matContent) =>
         `<span class="math-func-op">${func}</span>(${cleanMatrixInString(matContent)})`
     );
 
-    formatted = formatted.replace(/laplace\s*\(\s*['"]([^'"]+)['"]\s*\)/gi, (match, body) => 
+    formatted = formatted.replace(/laplace\s*\(\s*['"]([^'"]+)['"]\s*\)/gi, (match, body) =>
         `<span class="math-func-op">ℒ</span>{<span class="math-body">${body}</span>}`
     );
 
@@ -357,19 +376,19 @@ function formatExpressionForTape(expr) {
         .replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (match, base, exp) => `${base}${exp.split('').map(digit => superscripts[digit] || digit).join('')}`)
         .replace(/\*/g, ' · ');
 
-    formatted = formatted.replace(/(\b\w+|\d+)\s*\/\s*(\b\w+|\d+\b)/g, (match, num, den) => 
+    formatted = formatted.replace(/(\b\w+|\d+)\s*\/\s*(\b\w+|\d+\b)/g, (match, num, den) =>
         `<span class="math-fraction"><span class="math-num">${num}</span><span class="math-den">${den}</span></span>`
     );
 
-    formatted = formatted.replace(/fourier\s*\(\s*['"]([^'"]+)['"]\s*,\s*(\d+)\s*\)/gi, (match, body, n) => 
+    formatted = formatted.replace(/fourier\s*\(\s*['"]([^'"]+)['"]\s*,\s*(\d+)\s*\)/gi, (match, body, n) =>
         `<span class="math-func-op">Fourier</span>(<span class="math-body">${body}</span>, N=${n})`
     );
 
-    formatted = formatted.replace(/congruent\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi, (match, a, b, m) => 
+    formatted = formatted.replace(/congruent\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*,\s*([^)]+)\s*\)/gi, (match, a, b, m) =>
         `<span class="math-func-op">${a.trim()}</span> ≡ <span class="math-func-op">${b.trim()}</span> (mod ${m.trim()})`
     );
 
-    formatted = formatted.replace(/factors\s*\(\s*(\d+)\s*\)/gi, (match, num) => 
+    formatted = formatted.replace(/factors\s*\(\s*(\d+)\s*\)/gi, (match, num) =>
         `<span class="math-func-op">factors</span>(${num})`
     );
 
@@ -413,7 +432,10 @@ function appendTape(expr) {
         headerDiv.appendChild(rightContainer);
         lineDiv.appendChild(headerDiv);
 
-        graphDataToRender = { vars: [varsAndBody[1].trim()], body: varsAndBody[2].trim() };
+        graphDataToRender = {
+            vars: [varsAndBody[1].trim()],
+            body: varsAndBody[2].trim()
+        };
     }
 
     try {
@@ -425,7 +447,10 @@ function appendTape(expr) {
             headerDiv.appendChild(rightContainer);
             lineDiv.appendChild(headerDiv);
 
-            graphDataToRender = { vars, body: funcMatch[2].trim() };
+            graphDataToRender = {
+                vars,
+                body: funcMatch[2].trim()
+            };
         } else if (!fourierMatch) {
             let evaluated;
             try {
@@ -453,7 +478,7 @@ function appendTape(expr) {
                 memory = resultVal;
                 resultSpan.textContent = `= ${formatLocalNumber(resultVal)}`;
             } else {
-                resultSpan.textContent = `= ${formatResultForTape(String(resultVal))}`;
+                resultSpan.innerHTML = `= ${formatResultForTape(String(resultVal))}`;
             }
 
             rightContainer.appendChild(resultSpan);
@@ -487,23 +512,133 @@ function appendTape(expr) {
 }
 
 const HELP_DOCS = {
-    'arithmetic': { title: 'Aritmética Exacta', syntax: 'a / b + c / d', description: 'RTCalc procesa operaciones fraccionarias manteniendo precisión matemática.', example: '4/5 + 3/4', graphType: null },
-    'factor': { title: 'Factorización Simbólica (factor)', syntax: "factor('expresión')", description: 'Factoriza polinomios completamente utilizando el motor CAS interno.', example: "factor('x^4 - 16')", graphType: null },
-    'expand': { title: 'Expansión Algebraica (expandExpr)', syntax: "expandExpr('expresión')", description: 'Expande expresiones y binomios utilizando el motor CAS.', example: "expandExpr('(x + 2)^3')", graphType: null },
-    'factors': { title: 'Descomposición en Factores Primos (factors)', syntax: 'factors(entero)', description: 'Descompone un número entero mayor a 1 en sus factores primos.', example: 'factors(360)', graphType: null },
-    'mcd_mcm': { title: 'MCD y MCM', syntax: 'mcd(a, b) / mcm(a, b)', description: 'Calcula el MCD o MCM para dos o más números enteros.', example: 'mcd(24, 36, 60)', graphType: null },
-    'solveLinear': { title: 'Ecuaciones Lineales', syntax: 'solveLinear(a, b, c)', description: 'Resuelve la ecuación ax + b = c.', example: 'solveLinear(2, 4, 10)', graphType: null },
-    'solveQuad': { title: 'Ecuaciones Cuadráticas', syntax: 'solveQuad(a, b, c)', description: 'Raíces reales y complejas mediante Bhaskara.', example: 'solveQuad(1, -5, 6)', graphType: null },
-    'diophantine': { title: 'Ecuaciones Diofánticas', syntax: 'diophantine(a, b, c)', description: 'Resuelve ecuaciones ax + by = c enteras.', example: 'diophantine(35, 15, 50)', graphType: null },
-    'laplace': { title: 'Transformada de Laplace', syntax: "laplace('f(t)')", description: 'Obtiene la transformada analítica.', example: "laplace('t^2')", graphType: null },
-    'congruent': { title: 'Congruencia Modular', syntax: 'congruent(a, b, m)', description: 'Evalúa la relación a ≡ b (mod m).', example: 'congruent(17, 5, 12)', graphType: null },
-    'derivative': { title: 'Derivada Analítica', syntax: "derivative('expr', 'var')", description: 'Calcula la derivada simbólica.', example: "derivative('x^3 + 2*x', 'x')", graphType: null },
-    'integrate': { title: 'Integral Indefinida Simbólica', syntax: "integrate('expr', 'var')", description: 'Calcula la primitiva de la función utilizando el motor CAS.', example: "integrate('x * sin(x)', 'x')", graphType: null },
-    'integral': { title: 'Integral Definida', syntax: "integral('expr', 'var', a, b)", description: 'Calcula la integral numérica (Simpson).', example: "integral('x^2', 'x', 0, 3)", graphType: null },
-    'limit': { title: 'Límites Analíticos', syntax: "limit('expr', 'var', punto)", description: 'Evalúa el límite lateral de una función en un punto dado.', example: "limit('1/x', 'x', 0)", graphType: null },
-    'fourier': { title: 'Análisis de Fourier', syntax: "fourier('f(x)', N)", description: 'Suma parcial de armónicos hasta el grado N.', example: "fourier('x', 5)", graphType: '2d', graphData: { vars: ['x'], body: 'x, 2*sin(x) - sin(2*x) + (2/3)*sin(3*x) - (1/2)*sin(4*x) + (2/5)*sin(5*x)' } },
-    'matrices': { title: 'Álgebra Matricial', syntax: 'inv(matriz) / det(matriz)', description: 'Operaciones matriciales anidadas.', example: 'inv([[4, 7], [2, 6]])', graphType: null },
-    'plots': { title: 'Gráficos 2D y 3D', syntax: 'f(x) = ... / f(x, y) = ...', description: 'Trazado automático interactivo de curvas o superficies 3D.', example: 'f(x, y) = x^2 - y^2', graphType: '3d', graphData: { vars: ['x', 'y'], body: 'x^2 - y^2' } }
+    'arithmetic': {
+        title: 'Aritmética Exacta',
+        syntax: 'a / b + c / d',
+        description: 'RTCalc procesa operaciones fraccionarias manteniendo precisión matemática.',
+        example: '4/5 + 3/4',
+        graphType: null
+    },
+    'factor': {
+        title: 'Factorización Simbólica (factor)',
+        syntax: "factor('expresión')",
+        description: 'Factoriza polinomios completamente utilizando el motor CAS interno.',
+        example: "factor('x^4 - 16')",
+        graphType: null
+    },
+    'expand': {
+        title: 'Expansión Algebraica (expandExpr)',
+        syntax: "expandExpr('expresión')",
+        description: 'Expande expresiones y binomios utilizando el motor CAS.',
+        example: "expandExpr('(x + 2)^3')",
+        graphType: null
+    },
+    'factors': {
+        title: 'Descomposición en Factores Primos (factors)',
+        syntax: 'factors(entero)',
+        description: 'Descompone un número entero mayor a 1 en sus factores primos.',
+        example: 'factors(360)',
+        graphType: null
+    },
+    'mcd_mcm': {
+        title: 'MCD y MCM',
+        syntax: 'mcd(a, b) / mcm(a, b)',
+        description: 'Calcula el MCD o MCM para dos o más números enteros.',
+        example: 'mcd(24, 36, 60)',
+        graphType: null
+    },
+    'solveLinear': {
+        title: 'Ecuaciones Lineales',
+        syntax: 'solveLinear(a, b, c)',
+        description: 'Resuelve la ecuación ax + b = c.',
+        example: 'solveLinear(2, 4, 10)',
+        graphType: null
+    },
+    'solveQuad': {
+        title: 'Ecuaciones Cuadráticas',
+        syntax: 'solveQuad(a, b, c)',
+        description: 'Raíces reales y complejas mediante Bhaskara.',
+        example: 'solveQuad(1, -5, 6)',
+        graphType: null
+    },
+    'diophantine': {
+        title: 'Ecuaciones Diofánticas',
+        syntax: 'diophantine(a, b, c)',
+        description: 'Resuelve ecuaciones ax + by = c enteras.',
+        example: 'diophantine(35, 15, 50)',
+        graphType: null
+    },
+    'laplace': {
+        title: 'Transformada de Laplace',
+        syntax: "laplace('f(t)')",
+        description: 'Obtiene la transformada analítica.',
+        example: "laplace('t^2')",
+        graphType: null
+    },
+    'congruent': {
+        title: 'Congruencia Modular',
+        syntax: 'congruent(a, b, m)',
+        description: 'Evalúa la relación a ≡ b (mod m).',
+        example: 'congruent(17, 5, 12)',
+        graphType: null
+    },
+    'derivative': {
+        title: 'Derivada Analítica',
+        syntax: "derivative('expr', 'var')",
+        description: 'Calcula la derivada simbólica.',
+        example: "derivative('x^3 + 2*x', 'x')",
+        graphType: null
+    },
+    'integrate': {
+        title: 'Integral Indefinida Simbólica',
+        syntax: "integrate('expr', 'var')",
+        description: 'Calcula la primitiva de la función utilizando el motor CAS.',
+        example: "integrate('x * sin(x)', 'x')",
+        graphType: null
+    },
+    'integral': {
+        title: 'Integral Definida',
+        syntax: "integral('expr', 'var', a, b)",
+        description: 'Calcula la integral numérica (Simpson).',
+        example: "integral('x^2', 'x', 0, 3)",
+        graphType: null
+    },
+    'limit': {
+        title: 'Límites Analíticos',
+        syntax: "limit('expr', 'var', punto)",
+        description: 'Evalúa el límite lateral de una función en un punto dado.',
+        example: "limit('1/x', 'x', 0)",
+        graphType: null
+    },
+    'fourier': {
+        title: 'Análisis de Fourier',
+        syntax: "fourier('f(x)', N)",
+        description: 'Suma parcial de armónicos hasta el grado N.',
+        example: "fourier('x', 5)",
+        graphType: '2d',
+        graphData: {
+            vars: ['x'],
+            body: 'x, 2*sin(x) - sin(2*x) + (2/3)*sin(3*x) - (1/2)*sin(4*x) + (2/5)*sin(5*x)'
+        }
+    },
+    'matrices': {
+        title: 'Álgebra Matricial',
+        syntax: 'inv(matriz) / det(matriz)',
+        description: 'Operaciones matriciales anidadas.',
+        example: 'inv([[4, 7], [2, 6]])',
+        graphType: null
+    },
+    'plots': {
+        title: 'Gráficos 2D y 3D',
+        syntax: 'f(x) = ... / f(x, y) = ...',
+        description: 'Trazado automático interactivo de curvas o superficies 3D.',
+        example: 'f(x, y) = x^2 - y^2',
+        graphType: '3d',
+        graphData: {
+            vars: ['x', 'y'],
+            body: 'x^2 - y^2'
+        }
+    }
 };
 
 function openHelpModal() {
@@ -619,7 +754,9 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
 
     if (is3D) {
         const compiled = math.compile(bodyExpr);
-        const xValues = [], yValues = [], zValues = [];
+        const xValues = [],
+            yValues = [],
+            zValues = [];
         for (let i = -5; i <= 5; i += 0.4) xValues.push(i);
         for (let j = -5; j <= 5; j += 0.4) yValues.push(j);
 
@@ -627,19 +764,54 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
             const row = [];
             for (let x of xValues) {
                 try {
-                    const val = compiled.evaluate({ x, y, ...customScope });
+                    const val = compiled.evaluate({
+                        x,
+                        y,
+                        ...customScope
+                    });
                     row.push(typeof val === 'number' && !isNaN(val) && isFinite(val) ? val : null);
-                } catch { row.push(null); }
+                } catch {
+                    row.push(null);
+                }
             }
             zValues.push(row);
         }
 
-        Plotly.newPlot(container, [{ z: zValues, x: xValues, y: yValues, type: 'surface', colorscale: 'Turbo' }], {
-            margin: { t: 10, b: 10, l: 10, r: 10 },
-            font: { family: 'IBM Plex Sans Condensed, sans-serif', size: 11, color: '#1d1d1f' },
-            scene: { xaxis: { title: vars[0] || 'X' }, yaxis: { title: vars[1] || 'Y' }, zaxis: { title: 'Z' } },
-            paper_bgcolor: 'transparent', plot_bgcolor: 'transparent'
-        }, { responsive: true, displayModeBar: false });
+        Plotly.newPlot(container, [{
+            z: zValues,
+            x: xValues,
+            y: yValues,
+            type: 'surface',
+            colorscale: 'Turbo'
+        }], {
+            margin: {
+                t: 10,
+                b: 10,
+                l: 10,
+                r: 10
+            },
+            font: {
+                family: 'IBM Plex Sans Condensed, sans-serif',
+                size: 11,
+                color: '#1d1d1f'
+            },
+            scene: {
+                xaxis: {
+                    title: vars[0] || 'X'
+                },
+                yaxis: {
+                    title: vars[1] || 'Y'
+                },
+                zaxis: {
+                    title: 'Z'
+                }
+            },
+            paper_bgcolor: 'transparent',
+            plot_bgcolor: 'transparent'
+        }, {
+            responsive: true,
+            displayModeBar: false
+        });
 
     } else {
         const expressions = bodyExpr.split(',').map(e => e.trim());
@@ -652,21 +824,61 @@ function renderInlineGraph(vars, bodyExpr, containerId) {
                 const compiled = math.compile(expr);
                 const yValues = xValues.map(x => {
                     try {
-                        const y = compiled.evaluate({ [vars[0]]: x, ...customScope });
+                        const y = compiled.evaluate({
+                            [vars[0]]: x,
+                            ...customScope
+                        });
                         return (typeof y === 'number' && !isNaN(y) && isFinite(y)) ? y : null;
-                    } catch { return null; }
+                    } catch {
+                        return null;
+                    }
                 });
-                traces.push({ x: xValues, y: yValues, type: 'scatter', mode: 'lines', name: expr, line: { color: vibrantColors[index % vibrantColors.length], width: 3 } });
-            } catch (e) { console.error(`Error evaluando ${expr}`, e); }
+                traces.push({
+                    x: xValues,
+                    y: yValues,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: expr,
+                    line: {
+                        color: vibrantColors[index % vibrantColors.length],
+                        width: 3
+                    }
+                });
+            } catch (e) {
+                console.error(`Error evaluando ${expr}`, e);
+            }
         });
 
         Plotly.newPlot(container, traces, {
-            margin: { t: 10, b: 30, l: 30, r: 10 },
-            font: { family: 'IBM Plex Sans Condensed, sans-serif', size: 11, color: '#1d1d1f' },
-            xaxis: { title: vars[0] || 'x', gridcolor: '#e5e5ea' },
-            yaxis: { title: 'y', gridcolor: '#e5e5ea' },
-            legend: { orientation: 'h', y: 1.2, x: 0 },
-            paper_bgcolor: 'transparent', plot_bgcolor: 'transparent'
-        }, { responsive: true, displayModeBar: false });
+            margin: {
+                t: 10,
+                b: 30,
+                l: 30,
+                r: 10
+            },
+            font: {
+                family: 'IBM Plex Sans Condensed, sans-serif',
+                size: 11,
+                color: '#1d1d1f'
+            },
+            xaxis: {
+                title: vars[0] || 'x',
+                gridcolor: '#e5e5ea'
+            },
+            yaxis: {
+                title: 'y',
+                gridcolor: '#e5e5ea'
+            },
+            legend: {
+                orientation: 'h',
+                y: 1.2,
+                x: 0
+            },
+            paper_bgcolor: 'transparent',
+            plot_bgcolor: 'transparent'
+        }, {
+            responsive: true,
+            displayModeBar: false
+        });
     }
 }

@@ -10,6 +10,8 @@ const helpBtn = document.getElementById('help-btn');
 const clearTapeBtn = document.getElementById('clear-tape-btn');
 const submitBtn = document.getElementById('submit-btn');
 
+const { version } = require('../package.json');
+
 let memory = 0;
 let graphCounter = 0;
 let history = [];
@@ -39,6 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (helpBtn) helpBtn.title = t('btnHelpTitle');
     if (clearTapeBtn) clearTapeBtn.title = t('btnClearTitle');
     if (submitBtn) submitBtn.title = t('btnSubmitTitle');
+
+    // 💡 INYECCIÓN DINÁMICA DE LA VERSIÓN
+    const versionDisplay = document.getElementById('splash-version-display');
+    if (versionDisplay) {
+        versionDisplay.textContent = `v${version}`;
+    }
 
     const splashModal = document.getElementById('about-splash');
     if (splashModal) {
@@ -106,9 +114,23 @@ inputField.addEventListener('keydown', (e) => {
 
 function formatResultForTape(resultStr) {
     if (typeof resultStr !== 'string') return resultStr;
-    const superscripts = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹' };
+    
     return resultStr
-        .replace(/([a-zA-Z0-9\)]+)\^(\d+)/g, (match, base, exp) => `${base}${exp.split('').map(digit => superscripts[digit] || digit).join('')}`)
+        .replace(/\s*\^\s*/g, '^') // Elimina espacios alrededor del exponente
+        
+        // 1. Captura exponentes entre paréntesis ej: x^(n+1) -> x<sup>n+1</sup>
+        .replace(/([a-zA-Z0-9\)]+)\^\(([^)]+)\)/g, '$1<sup style="font-size: 0.75em;">$2</sup>')
+        
+        // 2. Captura exponentes simples alfanuméricos ej: x^n, e^x, 2^3 -> x<sup>n</sup>
+        .replace(/([a-zA-Z0-9\)]+)\^([a-zA-Z0-9]+)/g, '$1<sup style="font-size: 0.75em;">$2</sup>')
+        
+        // 3. Captura subíndices simples (muy útil para Fourier) ej: a_n, x_1 -> a<sub>n</sub>
+        .replace(/([a-zA-Z0-9]+)_([a-zA-Z0-9]+)/g, '$1<sub style="font-size: 0.75em;">$2</sub>')
+        
+        // 4. Fracciones verticales
+        .replace(/(\b\w+|\d+)\s*\/\s*(\b\w+|\d+\b)/g, (match, num, den) => `<span class="math-fraction"><span class="math-num">${num}</span><span class="math-den">${den}</span></span>`)
+        
+        // 5. Multiplicaciones
         .replace(/\*/g, ' · ');
 }
 

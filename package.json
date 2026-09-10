@@ -1,6 +1,6 @@
 {
   "name": "rtcalc",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Scientific Roller Tape Calculator",
   "author": "Pablo Niklas <pablo.niklas@gmail.com> (https://github.com/pabloniklas)",
   "main": "main.js",
